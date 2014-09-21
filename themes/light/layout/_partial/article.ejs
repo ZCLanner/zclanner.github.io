@@ -39,6 +39,6 @@
   </div>
 </article>
 
-<% if(!index){ %>
-<%- partial('comment') %>
+<% if (page.comments){ %>
+    <div class="ds-thread" data-thread-key="<%- item.path %>"></div>
 <% } %>
