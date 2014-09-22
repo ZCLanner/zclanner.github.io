@@ -3,21 +3,21 @@
 <head>
   <meta charset="utf-8">
   
-  <title>Archives | Hexo</title>
-  <meta name="author" content="John Doe">
+  <title>Archives | Lanner Memo</title>
+  <meta name="author" content="Lanner">
   
   
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
 
   
-  <meta property="og:site_name" content="Hexo"/>
+  <meta property="og:site_name" content="Lanner Memo"/>
 
   
     <meta property="og:image" content="undefined"/>
   
 
   <link href="/favicon.png" rel="icon">
-  <link rel="alternate" href="/atom.xml" title="Hexo" type="application/atom+xml">
+  <link rel="alternate" href="/atom.xml" title="Lanner Memo" type="application/atom+xml">
   <link rel="stylesheet" href="/css/style.css" media="screen" type="text/css">
   <!--[if lt IE 9]><script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script><![endif]-->
   
@@ -27,15 +27,15 @@
 
 <body>
   <header id="header" class="inner"><div class="alignleft">
-  <h1><a href="/">Hexo</a></h1>
-  <h2><a href="/"></a></h2>
+  <h1><a href="/">Lanner Memo</a></h1>
+  <h2><a href="/">Lanner的菜鸟笔记</a></h2>
 </div>
 <nav id="main-nav" class="alignright">
   <ul>
     
       <li><a href="/">Home</a></li>
     
-      <li><a href="/archives">Archives</a></li>
+      <li><a href="/about">关于Lanner</a></li>
     
   </ul>
   <div class="clearfix"></div>
@@ -44,6 +44,99 @@
   <div id="content" class="inner">
     <div id="main-col" class="alignleft"><div id="wrapper">
 <h2 class="archive-title">Archives</h2>
+
+
+  
+    <article class="post">
+  
+  <div class="post-content">
+    <header>
+      
+        <div class="icon"></div>
+        <time datetime="2014-09-22T15:31:10.000Z"><a href="/2014/09/22/poj-3974-最长连续回文串-manachers-algorithm/">Sep 22 2014</a></time>
+      
+      
+  
+    <h1 class="title"><a href="/2014/09/22/poj-3974-最长连续回文串-manachers-algorithm/">poj 3974 最长连续回文串 manachers algorithm</a></h1>
+  
+
+    </header>
+    <div class="entry">
+      
+        <p>先把原题翻译一下</p>
+<blockquote>
+<h2 id="描述">描述</h2>
+<p>聪明的计算机学生 Andy 正在思考一个教授问他一个简单问题：“你能写出一个找到一个字符串中最长回文子串的有效算法吗？”</p>
+<p>如果一个字符串正着读和反着读都相同的话，那么它就是一个回文串，比如说“madam”是一个回文串而“acm”就不是。</p>
+<p>学生们意识到这可能是一个经典算法，但是出了枚举出每一个子串并判断它是不是回文串以外，都想不出一个更有效的算法。一会儿，Andy 举手说，“我有一个好方法”，但他有停了一下说，“还有一个更好的方法”。</p>
+<p>如果你认为你知道 Andy 最后的答案，请说出来！你要在一个最多 1000000 个字符的字符串中找到最长的回文子串，并打印出他的长度。</p>
+<h2 id="输入">输入</h2>
+<p>你的代码将会被测试至多 30 次，每次会给出一个最长 1000000 个字符的小写字符串。输入以一个 “END” 行结束。</p>
+<h2 id="输出">输出</h2>
+<p>对每一个测试用例，给出最长回文子串的长度。</p>
+<h2 id="栗子">栗子</h2>
+<p>abcbabcbabcba</p>
+<p>abacacbaaaab</p>
+<p>END</p>
+<h2 id="栗子输出">栗子输出</h2>
+<p>Case 1: 13</p>
+<p>Case 2: 6</p>
+</blockquote>
+
+      
+    </div>
+    <footer>
+      
+        
+          <div class="alignleft">
+            <a href="/2014/09/22/poj-3974-最长连续回文串-manachers-algorithm/#more" class="more-link">Read More</a>
+          </div>
+        
+        
+      
+      <div class="clearfix"></div>
+    </footer>
+  </div>
+</article>
+
+
+
+  
+    <article class="post">
+  
+  <div class="post-content">
+    <header>
+      
+        <div class="icon"></div>
+        <time datetime="2014-09-22T14:54:26.000Z"><a href="/2014/09/22/beedb的一段反射代码研究/">Sep 22 2014</a></time>
+      
+      
+  
+    <h1 class="title"><a href="/2014/09/22/beedb的一段反射代码研究/">beedb的一段反射代码研究</a></h1>
+  
+
+    </header>
+    <div class="entry">
+      
+        <figure class="highlight Go"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div><div class="line">16</div><div class="line">17</div><div class="line">18</div><div class="line">19</div><div class="line">20</div><div class="line">21</div><div class="line">22</div></pre></td><td class="code"><pre><div class="line"><span class="keyword">func</span> (orm *Model) ScanPK(output <span class="keyword">interface</span>{}) *Model {</div><div class="line">    <span class="keyword">if</span> reflect.TypeOf(reflect.Indirect(reflect.ValueOf(output)).Interface()).Kind() == reflect.Slice {</div><div class="line">        sliceValue := reflect.Indirect(reflect.ValueOf(output))</div><div class="line">        sliceElementType := sliceValue.Type().Elem()</div><div class="line">        <span class="keyword">for</span> i :=<span class="number"> 0</span>; i &lt; sliceElementType.NumField(); i++ {</div><div class="line">            bb := sliceElementType.Field(i).Tag</div><div class="line">            <span class="keyword">if</span> bb.Get(<span class="string">"beedb"</span>) == <span class="string">"PK"</span> || reflect.ValueOf(bb).String() == <span class="string">"PK"</span> {</div><div class="line">                orm.PrimaryKey = sliceElementType.Field(i).Name</div><div class="line">            }</div><div class="line">        }</div><div class="line">    } <span class="keyword">else</span> {</div><div class="line">        tt := reflect.TypeOf(reflect.Indirect(reflect.ValueOf(output)).Interface())</div><div class="line">        <span class="keyword">for</span> i :=<span class="number"> 0</span>; i &lt; tt.NumField(); i++ {</div><div class="line">            bb := tt.Field(i).Tag</div><div class="line">            <span class="keyword">if</span> bb.Get(<span class="string">"beedb"</span>) == <span class="string">"PK"</span> || reflect.ValueOf(bb).String() == <span class="string">"PK"</span> {</div><div class="line">                orm.PrimaryKey = tt.Field(i).Name</div><div class="line">            }</div><div class="line">        }</div><div class="line">    }</div><div class="line">    <span class="keyword">return</span> orm</div><div class="line"></div><div class="line">}</div></pre></td></tr></table></figure>
+
+
+      
+    </div>
+    <footer>
+      
+        
+          <div class="alignleft">
+            <a href="/2014/09/22/beedb的一段反射代码研究/#more" class="more-link">Read More</a>
+          </div>
+        
+        
+      
+      <div class="clearfix"></div>
+    </footer>
+  </div>
+</article>
+
 
 
   
@@ -105,22 +198,29 @@
 </nav>
 </div></div>
     <aside id="sidebar" class="alignright">
-  <div class="search">
-  <form action="//google.com/search" method="get" accept-charset="utf-8">
-    <input type="search" name="q" results="0" placeholder="Search">
-    <input type="hidden" name="q" value="site:yoursite.com">
-  </form>
+  
+
+  
+<div class="widget tag">
+  <h3 class="title">Tags</h3>
+  <ul class="entry">
+  
+    <li><a href="/tags/GoLang/">GoLang</a><small>1</small></li>
+  
+    <li><a href="/tags/算法/">算法</a><small>1</small></li>
+  
+  </ul>
 </div>
 
-  
 
-  
+  <iframe width="100%" height="550" class="share_self"  frameborder="0" scrolling="no" src="http://widget.weibo.com/weiboshow/index.php?language=&width=0&height=550&fansRow=2&ptype=1&speed=0&skin=1&isTitle=1&noborder=1&isWeibo=1&isFans=1&uid=2517375827&verifier=5e91864c&dpc=1"></iframe>
+
 </aside>
     <div class="clearfix"></div>
   </div>
   <footer id="footer" class="inner"><div class="alignleft">
   
-  &copy; 2014 John Doe
+  &copy; 2014 Lanner
   
 </div>
 <div class="clearfix"></div></footer>
@@ -130,14 +230,6 @@
 
 
 
-
-<link rel="stylesheet" href="/fancybox/jquery.fancybox.css" media="screen" type="text/css">
-<script src="/fancybox/jquery.fancybox.pack.js"></script>
-<script type="text/javascript">
-(function($){
-  $('.fancybox').fancybox();
-})(jQuery);
-</script>
 
 <script type="text/javascript">
 var duoshuoQuery = {short_name:"lanner"};

@@ -1,0 +1,205 @@
+<!DOCTYPE HTML>
+<html>
+<head>
+  <meta charset="utf-8">
+  
+  <title>beedb的一段反射代码研究 | Lanner Memo</title>
+  <meta name="author" content="Lanner">
+  
+  <meta name="description" content="12345678910111213141516171819202122func (orm *Model) ScanPK(output interface{}) *Model {    if reflect.TypeOf(reflect.Indirect(reflect.ValueOf(output)).Interface()).Kind() == reflect.Slice {        sliceValue := reflect.Indirect(reflect.ValueOf(output))        sliceElementType := sliceValue.Type().Elem()        for i := 0; i &amp;lt; sliceElementType.NumField(); i++ {            bb := sliceElementType.Field(i).Tag            if bb.Get(&quot;beedb&quot;) == &quot;PK&quot; || reflect.ValueOf(bb).String() == &quot;PK&quot; {                orm.PrimaryKey = sliceElementType.Field(i).Name            }        }    } else {        tt := reflect.TypeOf(reflect.Indirect(reflect.ValueOf(output)).Interface())        for i := 0; i &amp;lt; tt.NumField(); i++ {            bb := tt.Field(i).Tag            if bb.Get(&quot;beedb&quot;) == &quot;PK&quot; || reflect.ValueOf(bb).String() == &quot;PK&quot; {                orm.PrimaryKey = tt.Field(i).Name            }        }    }    return orm}">
+  
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+
+  <meta property="og:title" content="beedb的一段反射代码研究"/>
+  <meta property="og:site_name" content="Lanner Memo"/>
+
+  
+    <meta property="og:image" content="undefined"/>
+  
+
+  <link href="/favicon.png" rel="icon">
+  <link rel="alternate" href="/atom.xml" title="Lanner Memo" type="application/atom+xml">
+  <link rel="stylesheet" href="/css/style.css" media="screen" type="text/css">
+  <!--[if lt IE 9]><script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script><![endif]-->
+  
+
+</head>
+
+
+<body>
+  <header id="header" class="inner"><div class="alignleft">
+  <h1><a href="/">Lanner Memo</a></h1>
+  <h2><a href="/">Lanner的菜鸟笔记</a></h2>
+</div>
+<nav id="main-nav" class="alignright">
+  <ul>
+    
+      <li><a href="/">Home</a></li>
+    
+      <li><a href="/about">关于Lanner</a></li>
+    
+  </ul>
+  <div class="clearfix"></div>
+</nav>
+<div class="clearfix"></div></header>
+  <div id="content" class="inner">
+    <div id="main-col" class="alignleft"><div id="wrapper"><article class="post">
+  
+  <div class="post-content">
+    <header>
+      
+        <div class="icon"></div>
+        <time datetime="2014-09-22T14:54:26.000Z"><a href="/2014/09/22/beedb的一段反射代码研究/">Sep 22 2014</a></time>
+      
+      
+  
+    <h1 class="title">beedb的一段反射代码研究</h1>
+  
+
+    </header>
+    <div class="entry">
+      
+        <figure class="highlight Go"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div><div class="line">16</div><div class="line">17</div><div class="line">18</div><div class="line">19</div><div class="line">20</div><div class="line">21</div><div class="line">22</div></pre></td><td class="code"><pre><div class="line"><span class="keyword">func</span> (orm *Model) ScanPK(output <span class="keyword">interface</span>{}) *Model {</div><div class="line">    <span class="keyword">if</span> reflect.TypeOf(reflect.Indirect(reflect.ValueOf(output)).Interface()).Kind() == reflect.Slice {</div><div class="line">        sliceValue := reflect.Indirect(reflect.ValueOf(output))</div><div class="line">        sliceElementType := sliceValue.Type().Elem()</div><div class="line">        <span class="keyword">for</span> i :=<span class="number"> 0</span>; i &lt; sliceElementType.NumField(); i++ {</div><div class="line">            bb := sliceElementType.Field(i).Tag</div><div class="line">            <span class="keyword">if</span> bb.Get(<span class="string">"beedb"</span>) == <span class="string">"PK"</span> || reflect.ValueOf(bb).String() == <span class="string">"PK"</span> {</div><div class="line">                orm.PrimaryKey = sliceElementType.Field(i).Name</div><div class="line">            }</div><div class="line">        }</div><div class="line">    } <span class="keyword">else</span> {</div><div class="line">        tt := reflect.TypeOf(reflect.Indirect(reflect.ValueOf(output)).Interface())</div><div class="line">        <span class="keyword">for</span> i :=<span class="number"> 0</span>; i &lt; tt.NumField(); i++ {</div><div class="line">            bb := tt.Field(i).Tag</div><div class="line">            <span class="keyword">if</span> bb.Get(<span class="string">"beedb"</span>) == <span class="string">"PK"</span> || reflect.ValueOf(bb).String() == <span class="string">"PK"</span> {</div><div class="line">                orm.PrimaryKey = tt.Field(i).Name</div><div class="line">            }</div><div class="line">        }</div><div class="line">    }</div><div class="line">    <span class="keyword">return</span> orm</div><div class="line"></div><div class="line">}</div></pre></td></tr></table></figure>
+
+<a id="more"></a>
+
+<p>开始看谢大的<a href="https://github.com/astaxie/beedb" target="_blank" rel="external">beedb</a>，结果在<code>Model.ScanPk(interface{})</code>就卡住了，主要是对函数中一些反射相关的API不了解，那就从反射开始研究吧。</p>
+<p>先来介绍<code>ScanPK</code>中会涉及到的几个数据结构，这里只会写到跟这个函数相关的数据结构的相关字段，如果有兴趣进一步研究的话请移步<a href="http://golang.org/pkg/reflect/" target="_blank" rel="external">golang reflect</a></p>
+<ul>
+<li>Type 表示数据结构类型的数据结构，部分字段的声明如下：  </li>
+</ul>
+<figure class="highlight Go"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div></pre></td><td class="code"><pre><div class="line"><span class="keyword">type</span> Type <span class="keyword">interface</span> {</div><div class="line">    </div><div class="line">    <span class="comment">// 这个Type的种类</span></div><div class="line">    Kind() Kind</div><div class="line"></div><div class="line">    <span class="comment">// 查找这个Type的第 i 个字段</span></div><div class="line">    Field(i <span class="typename">int</span>) StructField</div><div class="line"></div><div class="line">    <span class="comment">// 字段的数量</span></div><div class="line">    NumField() <span class="typename">int</span></div><div class="line">}</div></pre></td></tr></table></figure>
+
+<ul>
+<li><p>Value 表示数据结构值的数据结构，部分字段的声明如下：</p>
+</li>
+<li><p>Kind Go语言内置类型的枚举值，声明如下：</p>
+</li>
+</ul>
+<figure class="highlight Go"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div><div class="line">16</div><div class="line">17</div><div class="line">18</div><div class="line">19</div><div class="line">20</div><div class="line">21</div><div class="line">22</div><div class="line">23</div><div class="line">24</div><div class="line">25</div><div class="line">26</div><div class="line">27</div><div class="line">28</div><div class="line">29</div></pre></td><td class="code"><pre><div class="line"><span class="keyword">const</span> (</div><div class="line">    Invalid Kind = <span class="constant">iota</span></div><div class="line">    Bool</div><div class="line">    Int</div><div class="line">    Int8</div><div class="line">    Int16</div><div class="line">    Int32</div><div class="line">    Int64</div><div class="line">    Uint</div><div class="line">    Uint8</div><div class="line">    Uint16</div><div class="line">    Uint32</div><div class="line">    Uint64</div><div class="line">    Uintptr</div><div class="line">    Float32</div><div class="line">    Float64</div><div class="line">    Complex64</div><div class="line">    Complex128</div><div class="line">    Array</div><div class="line">    Chan</div><div class="line">    Func</div><div class="line">    Interface</div><div class="line">    Map</div><div class="line">    Ptr</div><div class="line">    Slice</div><div class="line">    String</div><div class="line">    Struct</div><div class="line">    UnsafePointer</div><div class="line">)</div></pre></td></tr></table></figure>
+
+<ul>
+<li>StructField 用于描述一个数据结构的字段，部分字段声明如下：</li>
+</ul>
+<figure class="highlight Go"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div></pre></td><td class="code"><pre><div class="line"><span class="keyword">type</span> StructField <span class="keyword">struct</span> {</div><div class="line">    <span class="comment">// 这个字段的名字</span></div><div class="line">    Name    <span class="typename">string</span></div><div class="line">    </div><div class="line">    Tag       StructTag <span class="comment">// 这个字段的注释</span></div><div class="line">}</div></pre></td></tr></table></figure>
+
+<ul>
+<li>StructTag StructField中有一个Tag字段，这个字段是对所属字段属性的一种补充。比如现在有一个自定义的数据结构声明如下：</li>
+</ul>
+<figure class="highlight Go"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div></pre></td><td class="code"><pre><div class="line"><span class="keyword">type</span> Person <span class="keyword">struct</span> {</div><div class="line">    Name <span class="typename">string</span> <span class="string">`json:"name"`</span></div><div class="line">    Age <span class="typename">int</span></div><div class="line">}</div></pre></td></tr></table></figure>
+
+<p>与C语言不同的地方是，Name字段在声明后，又添加了一段被反引号(`)包围的字符串，这个字符串的规则是<code>键名:&quot;值&quot;</code>。那么这种类型的结构在被反射时，这段被包围的字符串便会被解析到<code>StructTag</code>中，可以使用函数<code>StructTag.Get(key string)</code>来获得某个值。</p>
+<p>到这里，需要用到的数据结构就都交代完毕了，其中最重要的两个数据结构是<code>Value</code>、<code>Type</code>，一个表示值，一个表示类型。接下来再看几个函数。</p>
+<ul>
+<li><code>func TypeOf(i interface{}) Type</code>，获得 i 的类型</li>
+<li><code>func ValueOf(i interface{}) Value</code>，获得 i 的值</li>
+<li><code>func Indirect(v Value) Value</code>，获得 v 所指向的内存地址的类型。如果 v 是一个空指针，返回 zero Value；如果 v 不是一个指针，返回 v 自己</li>
+<li><code>func (v Value) Interface() (i interface{})</code>，把 v 转化成一个空接口 interface{}</li>
+</ul>
+<p>一切准备就绪，下面开始分析谢大的代码。总体上，这几行代码的思路是查看传入变量<code>output</code>的每个字段，如果某个字段带有主键注释的话，那么就把返回的<code>*Model</code>的<code>PrimaryKey</code>设成这个字段。传入的<code>output</code>有两种可能：字典(map)和结构(struct)，对这两种结构，枚举他们的字段有不同的处理方法。</p>
+<p>因为我阅读谢大代码的目的是改进这个ORM类库，在新的类库中不想使用字典类，所以跳过第一个分支，直接看第二个分支，看他是如何对struct进行处理的。</p>
+<ol>
+<li>使用一连串的反射API获取<code>output</code>的类型信息，存储到<code>tt</code>中</li>
+<li>调用<code>Type.Field(int)</code>得到每个字段</li>
+<li>查看字段的<code>Tag</code>中是否包含了<code>beedb</code>键，如果包含了<code>beedb</code>键，而且值为<code>&quot;PK&quot;</code>，说明这个字段是主键</li>
+</ol>
+<p>三步结束，非常完美，令人头疼的就是那一连串的反射API的使用<code>tt := reflect.TypeOf(reflect.Indirect(reflect.ValueOf(output)).Interface())</code>。</p>
+<p>从简单的开始，如果直接用<code>reflect.TypeOf(i interface{})</code>来获得<code>output</code>的类型行不行呢？假设有如下的自定义结构</p>
+<figure class="highlight Go"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div></pre></td><td class="code"><pre><div class="line"><span class="keyword">type</span> Person <span class="keyword">struct</span> {</div><div class="line">    Name <span class="typename">string</span></div><div class="line">    Age <span class="typename">int</span></div><div class="line">}</div></pre></td></tr></table></figure>
+
+<p>接着，初始化一个<code>*Person</code>，并检查它的类型</p>
+<figure class="highlight Go"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div></pre></td><td class="code"><pre><div class="line">person := &Person{"Lanner", 25}</div><div class="line">fmt.Println("Type:", reflect.TypeOf(person).Kind())&lt;/pre&gt;</div></pre></td></tr></table></figure>
+
+<p>输出如下</p>
+<figure class="highlight Go"><table><tr><td class="gutter"><pre><div class="line">1</div></pre></td><td class="code"><pre><div class="line">Type: *main.Person</div></pre></td></tr></table></figure>
+
+<p>结果是一个指针，这样便无法接着枚举出它的所有字段了。也就是说，如果只用<code>reflect.TypeOf(i interface{})</code>的话，只能保证在传入值是值而不是指针的情况下能正确执行，那么如何保证传入指针的情况下也能执行呢？这就要使用到<code>reflect.Indirect(v Value)</code>，允许我在重复一遍这个函数的作用，如果v是一个指针类型的话，它会返回指针v所指向的值的类型。那么代码就可以改进为如下形式</p>
+<figure class="highlight Go"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div></pre></td><td class="code"><pre><div class="line">person := &Person{<span class="string">"Lanner"</span>,<span class="number"> 25</span>}</div><div class="line">fmt.Println(<span class="string">"Type:"</span>, reflect.TypeOf(reflect.Indirect(reflect.ValueOf(person))))</div></pre></td></tr></table></figure>
+
+<p>输出如下</p>
+<figure class="highlight"><table><tr><td class="gutter"><pre><div class="line">1</div></pre></td><td class="code"><pre><div class="line"><span class="attribute">Type</span>: <span class="string">reflect.Value</span></div></pre></td></tr></table></figure>
+
+<p>是一个Value类型的，还不是想要的Person类型，<code>Value.Interface()</code>闪亮登场，由于<code>reflect.Indirect(v Value)</code>的返回值永远都是Value，我们对它监测类型没有丝毫意义，所以就要用<code>Value.Interface()</code>把它转换为空接口，这样<code>reflect.TypeOf(i interface{})</code>就能正确的显示i的类型了。</p>
+<figure class="highlight Go"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div></pre></td><td class="code"><pre><div class="line">person := &Person{<span class="string">"Lanner"</span>,<span class="number"> 25</span>}</div><div class="line">fmt.Println(<span class="string">"Type:"</span>, reflect.TypeOf(reflect.Indirect(reflect.ValueOf(person)).Interface()))</div></pre></td></tr></table></figure>
+
+<p>输出如下</p>
+<figure class="highlight Go"><table><tr><td class="gutter"><pre><div class="line">1</div></pre></td><td class="code"><pre><div class="line">Type: main.Person</div></pre></td></tr></table></figure>
+
+<p>大功告成！！</p>
+<p><em>Lanner 水平有限，可能有些地方讲解的不大清楚，感兴趣的读者可以看看下面我给出的参考文献</em></p>
+<ul>
+<li><a href="http://golang.org/pkg/reflect/" target="_blank" rel="external">Go reflect API文档</a></li>
+<li>Go 语言反射的规则(<a href="blog.golang.org/laws-of-reflection">原文</a> <a href="http://www.mikespook.com/2011/09/%E5%8F%8D%E5%B0%84%E7%9A%84%E8%A7%84%E5%88%99/" target="_blank" rel="external">中文译文</a>)</li>
+</ul>
+
+      
+    </div>
+    <footer>
+      
+        
+        
+  
+  <div class="tags">
+    <a href="/tags/GoLang/">GoLang</a>
+  </div>
+
+        
+      
+      <div class="clearfix"></div>
+    </footer>
+  </div>
+</article>
+
+
+  <div class="ds-thread" data-thread-key="2014/09/22/beedb的一段反射代码研究/"></div>
+
+</div></div>
+    <aside id="sidebar" class="alignright">
+  
+
+  
+<div class="widget tag">
+  <h3 class="title">Tags</h3>
+  <ul class="entry">
+  
+    <li><a href="/tags/GoLang/">GoLang</a><small>1</small></li>
+  
+    <li><a href="/tags/算法/">算法</a><small>1</small></li>
+  
+  </ul>
+</div>
+
+
+  <iframe width="100%" height="550" class="share_self"  frameborder="0" scrolling="no" src="http://widget.weibo.com/weiboshow/index.php?language=&width=0&height=550&fansRow=2&ptype=1&speed=0&skin=1&isTitle=1&noborder=1&isWeibo=1&isFans=1&uid=2517375827&verifier=5e91864c&dpc=1"></iframe>
+
+</aside>
+    <div class="clearfix"></div>
+  </div>
+  <footer id="footer" class="inner"><div class="alignleft">
+  
+  &copy; 2014 Lanner
+  
+</div>
+<div class="clearfix"></div></footer>
+  <script src="//ajax.useso.com/ajax/libs/jquery/2.0.3/jquery.min.js"></script>
+<script src="/js/jquery.imagesloaded.min.js"></script>
+<script src="/js/gallery.js"></script>
+
+
+
+
+<script type="text/javascript">
+var duoshuoQuery = {short_name:"lanner"};
+        (function() {
+                var ds = document.createElement('script');
+                ds.type = 'text/javascript';ds.async = true;
+                ds.src = 'http://static.duoshuo.com/embed.js';
+                ds.charset = 'UTF-8';
+                (document.getElementsByTagName('head')[0]
+                || document.getElementsByTagName('body')[0]).appendChild(ds);
+        })();
+</script>
+
+</body>
+</html>

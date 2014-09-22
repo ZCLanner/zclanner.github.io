@@ -1,0 +1,229 @@
+<!DOCTYPE HTML>
+<html>
+<head>
+  <meta charset="utf-8">
+  
+  <title>poj 3974 最长连续回文串 manachers algorithm | Lanner Memo</title>
+  <meta name="author" content="Lanner">
+  
+  <meta name="description" content="先把原题翻译一下
+
+描述
+聪明的计算机学生 Andy 正在思考一个教授问他一个简单问题：“你能写出一个找到一个字符串中最长回文子串的有效算法吗？”
+如果一个字符串正着读和反着读都相同的话，那么它就是一个回文串，比如说“madam”是一个回文串而“acm”就不是。
+学生们意识到这可能是一个经典算法，但是出了枚举出每一个子串并判断它是不是回文串以外，都想不出一个更有效的算法。一会儿，Andy 举手说，“我有一个好方法”，但他有停了一下说，“还有一个更好的方法”。
+如果你认为你知道 Andy 最后的答案，请说出来！你要在一个最多 1000000 个字符的字符串中找到最长的回文子串，并打印出他的长度。
+输入
+你的代码将会被测试至多 30 次，每次会给出一个最长 1000000 个字符的小写字符串。输入以一个 “END” 行结束。
+输出
+对每一个测试用例，给出最长回文子串的长度。
+栗子
+abcbabcbabcba
+abacacbaaaab
+END
+栗子输出
+Case 1: 13
+Case 2: 6">
+  
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+
+  <meta property="og:title" content="poj 3974 最长连续回文串 manachers algorithm"/>
+  <meta property="og:site_name" content="Lanner Memo"/>
+
+  
+    <meta property="og:image" content="undefined"/>
+  
+
+  <link href="/favicon.png" rel="icon">
+  <link rel="alternate" href="/atom.xml" title="Lanner Memo" type="application/atom+xml">
+  <link rel="stylesheet" href="/css/style.css" media="screen" type="text/css">
+  <!--[if lt IE 9]><script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script><![endif]-->
+  
+
+</head>
+
+
+<body>
+  <header id="header" class="inner"><div class="alignleft">
+  <h1><a href="/">Lanner Memo</a></h1>
+  <h2><a href="/">Lanner的菜鸟笔记</a></h2>
+</div>
+<nav id="main-nav" class="alignright">
+  <ul>
+    
+      <li><a href="/">Home</a></li>
+    
+      <li><a href="/about">关于Lanner</a></li>
+    
+  </ul>
+  <div class="clearfix"></div>
+</nav>
+<div class="clearfix"></div></header>
+  <div id="content" class="inner">
+    <div id="main-col" class="alignleft"><div id="wrapper"><article class="post">
+  
+  <div class="post-content">
+    <header>
+      
+        <div class="icon"></div>
+        <time datetime="2014-09-22T15:31:10.000Z"><a href="/2014/09/22/poj-3974-最长连续回文串-manachers-algorithm/">Sep 22 2014</a></time>
+      
+      
+  
+    <h1 class="title">poj 3974 最长连续回文串 manachers algorithm</h1>
+  
+
+    </header>
+    <div class="entry">
+      
+        <p>先把原题翻译一下</p>
+<blockquote>
+<h2 id="描述">描述</h2>
+<p>聪明的计算机学生 Andy 正在思考一个教授问他一个简单问题：“你能写出一个找到一个字符串中最长回文子串的有效算法吗？”</p>
+<p>如果一个字符串正着读和反着读都相同的话，那么它就是一个回文串，比如说“madam”是一个回文串而“acm”就不是。</p>
+<p>学生们意识到这可能是一个经典算法，但是出了枚举出每一个子串并判断它是不是回文串以外，都想不出一个更有效的算法。一会儿，Andy 举手说，“我有一个好方法”，但他有停了一下说，“还有一个更好的方法”。</p>
+<p>如果你认为你知道 Andy 最后的答案，请说出来！你要在一个最多 1000000 个字符的字符串中找到最长的回文子串，并打印出他的长度。</p>
+<h2 id="输入">输入</h2>
+<p>你的代码将会被测试至多 30 次，每次会给出一个最长 1000000 个字符的小写字符串。输入以一个 “END” 行结束。</p>
+<h2 id="输出">输出</h2>
+<p>对每一个测试用例，给出最长回文子串的长度。</p>
+<h2 id="栗子">栗子</h2>
+<p>abcbabcbabcba</p>
+<p>abacacbaaaab</p>
+<p>END</p>
+<h2 id="栗子输出">栗子输出</h2>
+<p>Case 1: 13</p>
+<p>Case 2: 6</p>
+</blockquote>
+<a id="more"></a>
+
+<h2 id="第一反应：穷举法">第一反应：穷举法</h2>
+<blockquote>
+<p>学生们意识到这可能是一个经典算法，但是出了枚举出每一个子串并判断它是不是回文串以外，都想不出一个更有效的算法。</p>
+</blockquote>
+<p>不让用！！！</p>
+<h2 id="O(n*n)_算法（不知道怎么用_markdown_打出来_n_的平方，各位先凑活着看吧）">O(n*n) 算法（不知道怎么用 markdown 打出来 n 的平方，各位先凑活着看吧）</h2>
+<p>首先解决一个比较恼人的问题，对于回文字符串，可以根据长度分成两种——长度为奇数和长度为偶数。对于长度为奇数的回文串，它的对称中心是一个字符，像<code>abcdcba</code>，对称中心就是<code>d</code>；而对于长度为偶数的回文串，像<code>abccba</code>，它的对称中心就在两个<code>c</code>之间。有个大牛想出来一种巧妙的方法，在原字符串的开头、结尾和每个字符之间加一个字符串中没有的字符进去，比如原题说</p>
+<blockquote>
+<p>每次会给出一个最长 1000000 个字符的小写字符串</p>
+</blockquote>
+<p>那么这个字符就可以是<code>#</code>，这样处理后的字符串<code>s</code>就一定是一个长度为奇数的字符串了，这就解决了分情况讨论的问题。</p>
+<p>接下来，定义一个整型数组<code>P</code>，<code>P[]</code>与<code>s[]</code>的长度相同，<code>P[i]</code>代表以<code>s[i]</code>为中心的回文串的半径。举个例子：</p>
+<pre><code>s  <span class="array">#  a  </span><span class="array">#  b  </span><span class="array">#  c  </span><span class="array">#  c  </span><span class="array">#  b  </span><span class="array">#  a  </span>#
+P  <span class="number">1</span>  <span class="number">2</span>  <span class="number">1</span>  <span class="number">2</span>  <span class="number">1</span>  <span class="number">2</span>  <span class="number">6</span>  <span class="number">2</span>  <span class="number">1</span>  <span class="number">2</span>  <span class="number">1</span>  <span class="number">2</span>  <span class="number">1</span>
+</code></pre><p>再举个栗子：</p>
+<pre><code>s  <span class="array">#  a  </span><span class="array">#  b  </span><span class="array">#  a  </span><span class="array">#  c  </span><span class="array">#  a  </span><span class="array">#  c  </span><span class="array">#  b  </span><span class="array">#  a  </span><span class="array">#  a  </span><span class="array">#  a  </span><span class="array">#  a  </span><span class="array">#  b  </span>#
+P  <span class="number">1</span>  <span class="number">2</span>  <span class="number">1</span>  <span class="number">4</span>  <span class="number">1</span>  <span class="number">2</span>  <span class="number">1</span>  <span class="number">4</span>  <span class="number">1</span>  <span class="number">4</span>  <span class="number">1</span>  <span class="number">2</span>  <span class="number">1</span>  <span class="number">2</span>  <span class="number">1</span>  <span class="number">2</span>  <span class="number">3</span>  <span class="number">4</span>  <span class="number">7</span>  <span class="number">4</span>  <span class="number">3</span>  <span class="number">2</span>  <span class="number">1</span>  <span class="number">2</span>  <span class="number">1</span>
+</code></pre><p>有了这个<code>P</code>数组，只要取出<code>P</code>数组中最大的那个值，与它对应的<code>s</code>中的字符便是最大回文子串的对称中心。那么，长度怎么算呢？有大牛证明过了，最大回文子串的长度就是<code>P</code>中的最大值（最大半径）减一。</p>
+<p>代码呼之欲出（只写初始化<code>P</code>数组的代码）</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div></pre></td><td class="code"><pre><div class="line"><span class="keyword">void</span> buildP(<span class="keyword">char</span> *str, <span class="keyword">int</span> P, <span class="keyword">int</span> len) {</div><div class="line">    P[<span class="number">0</span>] = <span class="number">1</span>;</div><div class="line">    <span class="keyword">for</span> (<span class="keyword">int</span> i = <span class="number">1</span>; i &lt; len; i++) {</div><div class="line">        <span class="keyword">for</span> (P[i] = <span class="number">1</span>; P[i] &lt;= i &amp;&amp; P[i]+i &lt; len &amp;&amp; str[i-P[i]] == str[i+P[i]]; P[i]++);  <span class="comment">//注意防止越界</span></div><div class="line">    }</div><div class="line">}</div></pre></td></tr></table></figure>
+
+<h2 id="O(n)_算法">O(n) 算法</h2>
+<p>很遗憾，OJ要求太高，还得上面的算法是过不了的，还得修改。突破点在哪？当我们知道了<code>P</code>的前<code>i-1</code>个值的时候，能不能利用这些前面的值，减少第<code>i</code>个值的计算呢？</p>
+<p>仔细观察之前的栗子</p>
+<pre><code>i   <span class="number">0</span>   <span class="number">1</span>   <span class="number">2</span>   <span class="number">3</span>   <span class="number">4</span>   <span class="number">5</span>   <span class="number">6</span>   <span class="number">7</span>   <span class="number">8</span>   <span class="number">9</span>  <span class="number">10</span>  <span class="number">11</span>  <span class="number">12</span> 
+s   <span class="array">#   a   </span><span class="array">#   b   </span><span class="array">#   c   </span><span class="array">#   c   </span><span class="array">#   b   </span><span class="array">#   a   </span>#
+P   <span class="number">1</span>   <span class="number">2</span>   <span class="number">1</span>   <span class="number">2</span>   <span class="number">1</span>   <span class="number">2</span>   <span class="number">6</span>   <span class="number">2</span>   <span class="number">1</span>   <span class="number">2</span>   <span class="number">1</span>   <span class="number">2</span>   <span class="number">1</span>
+</code></pre><p>这是一个完全的回文串，以两个<code>c</code>之间的<code>#</code>为对称轴，这个字符串的<code>P</code>数组有一个规律——以 6 为界，<code>P</code>值是左右对称的。这是巧合吗？想想也不是，因为字符串左右的完全对称的，那么不难证明<code>P</code>值也一定是对称的。</p>
+<p>利用这一规律，可以简化<code>P</code>的初始化。假设已经算到了这</p>
+<pre><code>i  <span class="number">0</span>   <span class="number">1</span>   <span class="number">2</span>   <span class="number">3</span>   <span class="number">4</span>   <span class="number">5</span>   <span class="number">6</span>   <span class="number">7</span>   <span class="number">8</span>   <span class="number">9</span>  <span class="number">10</span>  <span class="number">11</span>  <span class="number">12</span> 
+s  <span class="array">#   a   </span><span class="array">#   b   </span><span class="array">#   c   </span><span class="array">#   c   </span><span class="array">#   b   </span><span class="array">#   a   </span>#
+P  <span class="number">1</span>   <span class="number">2</span>   <span class="number">1</span>   <span class="number">2</span>   <span class="number">1</span>   <span class="number">2</span>   <span class="number">6</span>   ?
+</code></pre><p>由于<code>P</code>值是以<code>i = 6</code>为中心左右对称的，所以<code>P[7] = P[2*6 - 7] = P[5] = 2</code>，<code>P[8] = P[2*6 - 8] = P[4] = 1</code>。但这只是针对<code>s</code>是一个完全左右对称的字符串而言的，如果<code>s</code>不是呢？</p>
+<p>其实上面的结论可以进一步推广一下，如果字符串<code>s</code>的某个回文子串<code>s&#39;</code>的对称中心是<code>i</code>，回文子串的半径是<code>r</code>，那么在<code>P</code>数组中，索引<code>i-r</code>到<code>i+r</code>的值，<strong>可能</strong>是对称的。接着看栗子：</p>
+<pre><code>  |&lt;--------------------|--------------------&gt;|
+        |&lt;--------------------------|--------------------------&gt;|
+i  <span class="number">0</span>  <span class="number">1</span>  <span class="number">2</span>  <span class="number">3</span>  <span class="number">4</span>  <span class="number">5</span>  <span class="number">6</span>  <span class="number">7</span>  <span class="number">8</span>  <span class="number">9</span> <span class="number">10</span> <span class="number">11</span> <span class="number">12</span> <span class="number">13</span> <span class="number">14</span> <span class="number">15</span> <span class="number">16</span> <span class="number">17</span> <span class="number">18</span> <span class="number">19</span> <span class="number">20</span> <span class="number">21</span> <span class="number">22</span> <span class="number">23</span> <span class="number">24</span> <span class="number">25</span> <span class="number">26</span> <span class="number">27</span> <span class="number">28</span>
+s  <span class="array">#  b  </span><span class="array">#  a  </span><span class="array">#  b  </span><span class="array">#  c  </span><span class="array">#  b  </span><span class="array">#  a  </span><span class="array">#  b  </span><span class="array">#  c  </span><span class="array">#  b  </span><span class="array">#  a  </span><span class="array">#  c  </span><span class="array">#  c  </span><span class="array">#  b  </span><span class="array">#  a  </span>#
+P  <span class="number">1</span>  <span class="number">2</span>  <span class="number">1</span>  <span class="number">4</span>  <span class="number">1</span>  <span class="number">2</span>  <span class="number">1</span>  <span class="number">8</span>  <span class="number">1</span>  <span class="number">2</span>  <span class="number">1</span> <span class="number">10</span>  <span class="number">1</span>  <span class="number">2</span>  <span class="number">1</span>  ?
+</code></pre><p>利用上述推论，<code>P[12] = P[2*11 - 12] = P[10] = 2</code>，<code>P[13] = P[9] = 2</code>，<code>P[14] = P[8] = 1</code>，这三个结果显然是正确的。但是到了<code>P[15]</code>，如果继续套用上述公式的话，就会出现错误，这是为什么呢？因为它违背了本节开始提出的那个基本规律，那就是要求字符串必须是一个完全的回文串。</p>
+<p>对于<code>P[12]</code>、<code>P[13]</code>、<code>P[14]</code>，由于他们的半径都没有超出以<code>P[11]</code>为对称中心的回文串的最大范围，因此局部上来说，这相当于一个完全的回文串。但是对于<code>P[15]</code>的对称值<code>P[7]</code>，由于<code>P[7]</code>的半径是 8，已经穿越了以<code>P[11]</code>为对称中心的回文串的下界 2，这个回文串就变得不是完全对称的回文串了，计算方法便需要修改。此时可以注意到，既然以 7 为对称中心，半径为 8 的字符串是一个回文串，那么以 7 为对称中心半径为 6 的字符串也一定是一个回文串，这样一缩小范围，以 7 为对称中心的这个字符串又回到了以 11 为对称中心半径为 10 的字符串的范围之内，可以接着使用那个规律<code>P[15] = P[7] = __6__</code>。可是这个 6 只是一个下界，上界在哪，只好用上一节的代码接着探索了。</p>
+<p>这样，就可以看出这个规律得全貌了。</p>
+<blockquote>
+<p>对于字符串 s 得回文子串 s’，如果它是以第 i 个字符为对称轴，半径为 r 的话，[i, i+r]的 P 值满足一下规律：</p>
+<blockquote>
+<p>P[j] &gt;= min(P[2*i - j], i+r - j)</p>
+</blockquote>
+</blockquote>
+<p>那么上一节的代码可以进一步完善了：</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div></pre></td><td class="code"><pre><div class="line"><span class="keyword">void</span> buildP(<span class="keyword">char</span> *str, <span class="keyword">int</span> P, <span class="keyword">int</span> len) {</div><div class="line">    <span class="keyword">int</span> maxBounds = <span class="number">1</span>;</div><div class="line">    <span class="keyword">int</span> maxCenter = <span class="number">0</span>;</div><div class="line">    P[<span class="number">0</span>] = <span class="number">1</span>;</div><div class="line">    <span class="keyword">for</span> (<span class="keyword">int</span> i = <span class="number">1</span>; i &lt; len; i++) {</div><div class="line">        P[i] = min(P[<span class="number">2</span>*maxCenter - i], maxBounds - i);</div><div class="line">        <span class="keyword">for</span> (; P[i] &lt;= i &amp;&amp; P[i]+i &lt; len &amp;&amp; str[i-P[i]] == str[i+P[i]]; P[i]++);  <span class="comment">//注意防止越界</span></div><div class="line">    }</div><div class="line">}</div></pre></td></tr></table></figure>
+
+<p>讲到这里，总体的 Manacher’s 可以告一段落了，但是防止越界的判断还是略显啰嗦。有大牛想出了一个哨兵的方法，在字符串的开头加一个<code>@</code>，由于这个<code>@</code>与所有的字符都不同，因此一切比较到此都会停止，也就不用担心越界了。最终代码如下：</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div><div class="line">16</div><div class="line">17</div><div class="line">18</div><div class="line">19</div><div class="line">20</div><div class="line">21</div><div class="line">22</div><div class="line">23</div><div class="line">24</div><div class="line">25</div><div class="line">26</div><div class="line">27</div><div class="line">28</div><div class="line">29</div><div class="line">30</div><div class="line">31</div><div class="line">32</div><div class="line">33</div><div class="line">34</div><div class="line">35</div><div class="line">36</div><div class="line">37</div><div class="line">38</div><div class="line">39</div><div class="line">40</div><div class="line">41</div><div class="line">42</div><div class="line">43</div><div class="line">44</div><div class="line">45</div><div class="line">46</div><div class="line">47</div><div class="line">48</div><div class="line">49</div><div class="line">50</div><div class="line">51</div><div class="line">52</div><div class="line">53</div><div class="line">54</div><div class="line">55</div><div class="line">56</div><div class="line">57</div><div class="line">58</div><div class="line">59</div><div class="line">60</div></pre></td><td class="code"><pre><div class="line"><span class="preprocessor">#include &lt;stdio.h&gt;</span></div><div class="line"><span class="preprocessor">#include &lt;string.h&gt;</span></div><div class="line"></div><div class="line"><span class="preprocessor">#<span class="keyword">define</span> MAX_LEN 2000002</span></div><div class="line"></div><div class="line"><span class="keyword">char</span> str1[MAX_LEN], str2[MAX_LEN];</div><div class="line"><span class="keyword">int</span> p[MAX_LEN];</div><div class="line"></div><div class="line"><span class="keyword">int</span> min(<span class="keyword">int</span> a, <span class="keyword">int</span> b) {</div><div class="line">    <span class="keyword">return</span> a &gt; b ? b : a;</div><div class="line">}</div><div class="line"></div><div class="line"><span class="keyword">int</span> main() {</div><div class="line">    <span class="keyword">int</span> i, j;</div><div class="line">    <span class="keyword">int</span> maxBounds, maxCenter, length;</div><div class="line">    <span class="keyword">int</span> caseNo = <span class="number">1</span>;</div><div class="line">    <span class="keyword">int</span> str1len, str2len;</div><div class="line"></div><div class="line">    <span class="built_in">scanf</span>(<span class="string">"%s"</span>, str1);</div><div class="line">    <span class="keyword">while</span> (<span class="built_in">strcmp</span>(str1, <span class="string">"END"</span>) != <span class="number">0</span>) {</div><div class="line"></div><div class="line">        str2[<span class="number">0</span>] = <span class="string">'@'</span>;</div><div class="line">        str1len = <span class="built_in">strlen</span>(str1);</div><div class="line">        str2len = str1len * <span class="number">2</span> + <span class="number">2</span>;</div><div class="line">        <span class="keyword">for</span> (i = <span class="number">0</span>; i &lt; str1len; i++) {</div><div class="line">            str2[<span class="number">2</span>*i+<span class="number">1</span>] = <span class="string">'#'</span>;</div><div class="line">            str2[<span class="number">2</span>*i+<span class="number">2</span>] = str1[i];</div><div class="line">        }    </div><div class="line">        str2[<span class="number">2</span>*i+<span class="number">1</span>] = <span class="string">'#'</span>;</div><div class="line">        str2[<span class="number">2</span>*i+<span class="number">2</span>] = <span class="string">'\0'</span>;</div><div class="line"></div><div class="line">        maxBounds = <span class="number">0</span>;</div><div class="line">        maxCenter = <span class="number">0</span>;</div><div class="line">        length = <span class="number">1</span>;</div><div class="line">        p[<span class="number">0</span>] = <span class="number">1</span>;</div><div class="line">        <span class="keyword">for</span> (i = <span class="number">1</span>; i &lt; str2len; i++) {</div><div class="line">            <span class="keyword">if</span> (maxBounds &gt; i) {</div><div class="line">                p[i] = min(p[<span class="number">2</span>*maxCenter-i], maxBounds-i);</div><div class="line">            } <span class="keyword">else</span> {</div><div class="line">                p[i] = <span class="number">1</span>;</div><div class="line">            }</div><div class="line"></div><div class="line">            <span class="keyword">for</span> (; str2[i-p[i]] == str2[i+p[i]]; p[i]++);</div><div class="line">            <span class="keyword">if</span> (i+p[i] &gt; maxBounds) {</div><div class="line">                maxBounds = i+p[i];</div><div class="line">                maxCenter = i;</div><div class="line">            }</div><div class="line">            <span class="keyword">if</span> (length &lt; p[i]) {</div><div class="line">                length = p[i];</div><div class="line">            }</div><div class="line">        }</div><div class="line"></div><div class="line">        <span class="built_in">printf</span>(<span class="string">"Case %d: %d\n"</span>, caseNo, length-<span class="number">1</span>);</div><div class="line">        caseNo++;</div><div class="line"></div><div class="line">        <span class="built_in">scanf</span>(<span class="string">"%s"</span>, str1);</div><div class="line">    }</div><div class="line"></div><div class="line">    <span class="keyword">return</span> <span class="number">0</span>;</div><div class="line">}</div></pre></td></tr></table></figure>
+
+<p><em>参考文献</em></p>
+<ul>
+<li><a href="http://blog.csdn.net/hopeztm/article/details/7932245" target="_blank" rel="external">最长连续回文串（Longest Palindromic Substring）</a></li>
+</ul>
+
+      
+    </div>
+    <footer>
+      
+        
+        
+  
+  <div class="tags">
+    <a href="/tags/算法/">算法</a>
+  </div>
+
+        
+      
+      <div class="clearfix"></div>
+    </footer>
+  </div>
+</article>
+
+
+  <div class="ds-thread" data-thread-key="2014/09/22/poj-3974-最长连续回文串-manachers-algorithm/"></div>
+
+</div></div>
+    <aside id="sidebar" class="alignright">
+  
+
+  
+<div class="widget tag">
+  <h3 class="title">Tags</h3>
+  <ul class="entry">
+  
+    <li><a href="/tags/GoLang/">GoLang</a><small>1</small></li>
+  
+    <li><a href="/tags/算法/">算法</a><small>1</small></li>
+  
+  </ul>
+</div>
+
+
+  <iframe width="100%" height="550" class="share_self"  frameborder="0" scrolling="no" src="http://widget.weibo.com/weiboshow/index.php?language=&width=0&height=550&fansRow=2&ptype=1&speed=0&skin=1&isTitle=1&noborder=1&isWeibo=1&isFans=1&uid=2517375827&verifier=5e91864c&dpc=1"></iframe>
+
+</aside>
+    <div class="clearfix"></div>
+  </div>
+  <footer id="footer" class="inner"><div class="alignleft">
+  
+  &copy; 2014 Lanner
+  
+</div>
+<div class="clearfix"></div></footer>
+  <script src="//ajax.useso.com/ajax/libs/jquery/2.0.3/jquery.min.js"></script>
+<script src="/js/jquery.imagesloaded.min.js"></script>
+<script src="/js/gallery.js"></script>
+
+
+
+
+<script type="text/javascript">
+var duoshuoQuery = {short_name:"lanner"};
+        (function() {
+                var ds = document.createElement('script');
+                ds.type = 'text/javascript';ds.async = true;
+                ds.src = 'http://static.duoshuo.com/embed.js';
+                ds.charset = 'UTF-8';
+                (document.getElementsByTagName('head')[0]
+                || document.getElementsByTagName('body')[0]).appendChild(ds);
+        })();
+</script>
+
+</body>
+</html>
