@@ -51,6 +51,83 @@
     <header>
       
         <div class="icon"></div>
+        <time datetime="2014-09-23T15:26:49.000Z"><a href="/2014/09/23/一个完整的-Core-Data-应用/">Sep 23 2014</a></time>
+      
+      
+  
+    <h1 class="title"><a href="/2014/09/23/一个完整的-Core-Data-应用/">一个完整的 Core Data 应用</a></h1>
+  
+
+    </header>
+    <div class="entry">
+      
+        <p>在本文中，我们将会创建一个小而完整的 Core Data 应用，这个应用允许你建立一组层次化的列表，列表的每一个表项可以有它的子列表，这个列表的层次化结构可以是非常非常深的。为了完全的理解 Core Data 的运行机制，我们会手工建立起这个 Core Data 的堆栈结构，而不是使用 Xcode 提供的模板。示例代码可以到 <a href="https://github.com/objcio/issue-4-full-core-data-application" target="_blank" rel="external">GitHub</a> 上查看。</p>
+
+      
+    </div>
+    <footer>
+      
+        
+          <div class="alignleft">
+            <a href="/2014/09/23/一个完整的-Core-Data-应用/#more" class="more-link">Read More</a>
+          </div>
+        
+        
+      
+      <div class="clearfix"></div>
+    </footer>
+  </div>
+</article>
+
+
+
+
+  <article class="post">
+  
+  <div class="post-content">
+    <header>
+      
+        <div class="icon"></div>
+        <time datetime="2014-09-23T15:16:59.000Z"><a href="/2014/09/23/在iOS下访问通讯录/">Sep 23 2014</a></time>
+      
+      
+  
+    <h1 class="title"><a href="/2014/09/23/在iOS下访问通讯录/">在iOS下访问通讯录</a></h1>
+  
+
+    </header>
+    <div class="entry">
+      
+        <p>现在写应该晚了很多了，毕竟iOS 6已经出来大半年了，不过我知道昨天才搞明白iOS 6下通讯录权限正确的获取方法，就在这做个记录吧。</p>
+<p>啥也不说，先上代码。</p>
+<figure class="highlight objc"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div><div class="line">16</div><div class="line">17</div><div class="line">18</div><div class="line">19</div><div class="line">20</div></pre></td><td class="code"><pre><div class="line">- (<span class="keyword">void</span>)initAddressBook</div><div class="line">{</div><div class="line">    _addressBook = <span class="literal">NULL</span>;</div><div class="line">    __block <span class="built_in">BOOL</span> accessGranted = <span class="literal">NO</span>;</div><div class="line"></div><div class="line">    dispatch_semaphore_t sema = dispatch_semaphore_create(<span class="number">0</span>);</div><div class="line">    <span class="keyword">if</span> (ABAddressBookRequestAccessWithCompletion != <span class="literal">NULL</span>) { <span class="comment">// we're on iOS 6</span></div><div class="line">        _addressBook = ABAddressBookCreateWithOptions(<span class="literal">NULL</span>, <span class="literal">nil</span>);</div><div class="line">        ABAddressBookRequestAccessWithCompletion(_addressBook, ^(<span class="keyword">bool</span> granted, CFErrorRef error) {</div><div class="line">        accessGranted = granted;</div><div class="line">        dispatch_semaphore_signal(sema);</div><div class="line">    });</div><div class="line">    dispatch_semaphore_wait(sema, DISPATCH_TIME_FOREVER);</div><div class="line">    dispatch_release(sema);</div><div class="line">    <span class="keyword">if</span> (!accessGranted)</div><div class="line">        _addressBook = <span class="literal">nil</span>;</div><div class="line">    } <span class="keyword">else</span> { <span class="comment">// we're on iOS 5 or older</span></div><div class="line">        _addressBook = ABAddressBookCreate();</div><div class="line">    }</div><div class="line">}</div></pre></td></tr></table></figure>
+
+
+      
+    </div>
+    <footer>
+      
+        
+          <div class="alignleft">
+            <a href="/2014/09/23/在iOS下访问通讯录/#more" class="more-link">Read More</a>
+          </div>
+        
+        
+      
+      <div class="clearfix"></div>
+    </footer>
+  </div>
+</article>
+
+
+
+
+  <article class="post">
+  
+  <div class="post-content">
+    <header>
+      
+        <div class="icon"></div>
         <time datetime="2014-09-23T09:52:48.000Z"><a href="/2014/09/23/hello-world/">Sep 23 2014</a></time>
       
       
@@ -219,7 +296,11 @@
   <h3 class="title">Tags</h3>
   <ul class="entry">
   
+    <li><a href="/tags/Core-Data/">Core Data</a><small>1</small></li>
+  
     <li><a href="/tags/GoLang/">GoLang</a><small>1</small></li>
+  
+    <li><a href="/tags/iOS/">iOS</a><small>2</small></li>
   
     <li><a href="/tags/算法/">算法</a><small>1</small></li>
   
@@ -231,6 +312,14 @@
 <div class="widget tag">
   <h3 class="title">Recent Posts</h3>
   <ul class="entry">
+    
+      <li>
+        <a href="/2014/09/23/一个完整的-Core-Data-应用/">一个完整的 Core Data 应用</a>
+      </li>
+    
+      <li>
+        <a href="/2014/09/23/在iOS下访问通讯录/">在iOS下访问通讯录</a>
+      </li>
     
       <li>
         <a href="/2014/09/23/hello-world/">Hello World</a>

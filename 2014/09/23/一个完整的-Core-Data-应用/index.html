@@ -1,0 +1,293 @@
+<!DOCTYPE HTML>
+<html>
+<head>
+  <meta charset="utf-8">
+  
+  <title>一个完整的 Core Data 应用 | Lanner Memo</title>
+  <meta name="author" content="Lanner">
+  
+  <meta name="description" content="在本文中，我们将会创建一个小而完整的 Core Data 应用，这个应用允许你建立一组层次化的列表，列表的每一个表项可以有它的子列表，这个列表的层次化结构可以是非常非常深的。为了完全的理解 Core Data 的运行机制，我们会手工建立起这个 Core Data 的堆栈结构，而不是使用 Xcode 提供的模板。示例代码可以到 GitHub 上查看。">
+  
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+
+  <meta property="og:title" content="一个完整的 Core Data 应用"/>
+  <meta property="og:site_name" content="Lanner Memo"/>
+
+  
+    <meta property="og:image" content="undefined"/>
+  
+
+  <link href="/favicon.png" rel="icon" type="image/x-ico">
+  <link rel="alternate" href="/atom.xml" title="Lanner Memo" type="application/atom+xml">
+  <link rel="stylesheet" href="/css/style.css" media="screen" type="text/css">
+  <!--[if lt IE 9]><script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script><![endif]-->
+  
+
+</head>
+
+
+<body>
+  <header id="header" class="inner"><div class="alignleft">
+  <h1><a href="/">Lanner Memo</a></h1>
+  <h2><a href="/">Lanner的菜鸟笔记</a></h2>
+</div>
+<nav id="main-nav" class="alignright">
+  <ul>
+    
+      <li><a href="/">Home</a></li>
+    
+      <li><a href="/About">关于Lanner</a></li>
+    
+      <li><a href="/nonsense">碎碎念</a></li>
+    
+  </ul>
+  <div class="clearfix"></div>
+</nav>
+<div class="clearfix"></div></header>
+  <div id="content" class="inner">
+    <div id="main-col" class="alignleft"><div id="wrapper"><article class="post">
+  
+  <div class="post-content">
+    <header>
+      
+        <div class="icon"></div>
+        <time datetime="2014-09-23T15:26:49.000Z"><a href="/2014/09/23/一个完整的-Core-Data-应用/">Sep 23 2014</a></time>
+      
+      
+  
+    <h1 class="title">一个完整的 Core Data 应用</h1>
+  
+
+    </header>
+    <div class="entry">
+      
+        <p>在本文中，我们将会创建一个小而完整的 Core Data 应用，这个应用允许你建立一组层次化的列表，列表的每一个表项可以有它的子列表，这个列表的层次化结构可以是非常非常深的。为了完全的理解 Core Data 的运行机制，我们会手工建立起这个 Core Data 的堆栈结构，而不是使用 Xcode 提供的模板。示例代码可以到 <a href="https://github.com/objcio/issue-4-full-core-data-application" target="_blank" rel="external">GitHub</a> 上查看。</p>
+<a id="more"></a>
+
+<h2 id="我们会怎么建立它">我们会怎么建立它</h2>
+<p>首先，我们会使用一个 Core Data 模型和一个文件名来创建一个 PersistentStack 对象，它会返回一个上下文；然后，我们要建立我们自己的 Core Data 模型；接下来，我们会新建一个简单的 UITableViewController来展示列表项的根节点，这会用到 NSFetchedResultsController，列表同时会一步步的提供添加、导航、删除、恢复等功能的支持。</p>
+<h2 id="建立栈结构">建立栈结构</h2>
+<p>我们首先在主线程队列创建一个上下文，在以前的代码中，你可能会看到<code>[[NSManagedObjectContext alloc] init]</code>，但是现在，如果你使用了基于队列的并行模型，你应该使用<code>initWithConcurrencyType:</code>这个初始化方法：</p>
+<figure class="highlight objc"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div><div class="line">16</div><div class="line">17</div></pre></td><td class="code"><pre><div class="line">- (<span class="keyword">void</span>)setupManagedObjectContext</div><div class="line">{</div><div class="line">    <span class="keyword">self</span><span class="variable">.managedObjectContext</span> =</div><div class="line">        [[NSManagedObjectContext alloc] initWithConcurrencyType:NSMainQueueConcurrencyType];</div><div class="line">    <span class="keyword">self</span><span class="variable">.managedObjectContext</span><span class="variable">.persistentStoreCoordinator</span> =</div><div class="line">        [[NSPersistentStoreCoordinator alloc] initWithManagedObjectModel:<span class="keyword">self</span><span class="variable">.managedObjectModel</span>];</div><div class="line">    <span class="built_in">NSError</span> *error;</div><div class="line">    [<span class="keyword">self</span><span class="variable">.managedObjectContext</span><span class="variable">.persistentStoreCoordinator</span> addPersistentStoreWithType:NSSQLiteStoreType</div><div class="line">                                                                       configuration:<span class="literal">nil</span></div><div class="line">                                                                                 URL:<span class="keyword">self</span><span class="variable">.storeURL</span></div><div class="line">                                                                             options:<span class="literal">nil</span></div><div class="line">                                                                               error:&amp;error];</div><div class="line">    <span class="keyword">if</span> (error) {</div><div class="line">        <span class="built_in">NSLog</span>(<span class="string">"error: %@"</span>, error);</div><div class="line">    }                          </div><div class="line">    <span class="keyword">self</span><span class="variable">.managedObjectContext</span><span class="variable">.undoManager</span> = [[NSUndoManager alloc] init];</div><div class="line">}</div></pre></td></tr></table></figure>
+
+<p>检查错误很重要，因为在开发中很可能产生失败。比如当你修改了你的数据模型，Core Data 检测到了这一点便不再会继续下去了，你也可以给 options 传一个值来高速 Core Data 这种情况下应该怎么做，Martin 在他的数据迁移这篇文章中详细描述了这点。在最后一行代码中添加的一个 undo manager 会在以后被使用到，不同于在 Mac，在 iOS 上你需要显示的添加一个 undo manager，不然它不会被默认加上。</p>
+<p>上段代码创建了一个简单的 Core Data 栈结构：一个上下文，一个上下文关联的 PSC 和一个 PSC 关联的持久化存储。设置可以更复杂，通常可能有许多上下文，每个上下文在一个单独的队列中。</p>
+<h2 id="创建模型">创建模型</h2>
+<p>创建模型很简单，我们只需要在工程中新建一个文件，选择 Core Data 模板（在 Core Data 分类下面）。这个文件会被编译为一个后缀名为 momd 的文件，持久化存储需要一个 NSManagedObjectModel 的对象，当我们在运行时需要创建这个对象时，需要载入这个 momd 文件。模型的源文件是一个简单的 XML 文件，根据经验，当你把它放到版本控制中时，你一般不会遇到需要合并的问题。如果你愿意的话，你也可以在代码中创建一个模型。</p>
+<p>当你创建了模型之后，你就可以添加一个有两个属性的 Item 了；接着，你要给它添加两个关系：parent 和 children；你需要把这两个关系设置为互逆的，也就是说如果你把 a 的 parent 设置成了 b，那么 b 就自动把 a 设置成了 它的 children 之一了。</p>
+<p>通常情况下，你还可以使用 order 关系，或把 order 属性置空，但是当你使用 NSFetchedResultsController 查询是，这个 order 关系就表现得不是特别理想了。我们要做的是：要么重新实现一部分 NSFetchedResultsController 的；要么重新实现排序，我选择了后者。</p>
+<p>现在在菜单中选择“编辑” &gt; “创建 NSManagedObject 子类”，创建了一个绑定到这个实体的子类，这样你会得到两个新建的文件：Item.h 和 Item.m，在头文件中还有一个由于历史原因保留下来的额外的 category，我们要立即把这个东西删掉。</p>
+<h2 id="创建一个_Store_类">创建一个 Store 类</h2>
+<p>我们要创建一个根节点作为 item 树的起点，为了创建它并在稍后找出它，我们需要创建一个简单的 Store 类来帮助完成这一任务。它有一个 managed object context 和一个找到 rootItem 的方法。在我们应用的 app delegate 中，我们要找到这个 rootItem 并把它传递给根 view controller。你也可以把这个 rootItem 存储到 user defaults 中，以便能够更快的找到它：</p>
+<figure class="highlight objc"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div></pre></td><td class="code"><pre><div class="line">- (Item *)rootItem</div><div class="line">{</div><div class="line">    NSFetchRequest *request = [NSFetchRequest fetchRequestWithEntityName:<span class="string">@"Item"</span>];</div><div class="line">    request<span class="variable">.predicate</span> = [NSPredicate predicateWithFormat:<span class="string">@"parent = %@"</span>, <span class="literal">nil</span>];</div><div class="line">    <span class="built_in">NSArray</span> *objects = [<span class="keyword">self</span><span class="variable">.managedObjectContext</span> executeFetchRequest:request error:<span class="literal">NULL</span>];</div><div class="line">    Item *rootItem = [objects lastObject];</div><div class="line">    <span class="keyword">if</span> (rootItem == <span class="literal">nil</span>) {</div><div class="line">        rootItem = [Item insertItemWithTitle:<span class="literal">nil</span></div><div class="line">                                      parent:<span class="literal">nil</span></div><div class="line">                      inManagedObjectContext:<span class="keyword">self</span><span class="variable">.managedObjectContext</span>];</div><div class="line">    }</div><div class="line">    <span class="keyword">return</span> rootItem;</div><div class="line">}</div></pre></td></tr></table></figure>
+
+<p>添加一个新的 item 是很简单的，有一点需要注意的是，当我们设置一个新的 item 的 order 属性时，我们要把这个属性的值设置得比它的兄弟 item 的 order 属性值都大：这样一来，第一个孩子的 order 为 0，之后的孩子的 order 属性的值都要比它前面的大1。我们会在 Item 类中自定义一个方法，并把上数设置 order 的逻辑写到这个自定义的方法中：</p>
+<figure class="highlight objc"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div><div class="line">16</div><div class="line">17</div></pre></td><td class="code"><pre><div class="line">+ (instancetype)insertItemWithTitle:(<span class="built_in">NSString</span> *)title</div><div class="line">                             parent:(Item *)parent</div><div class="line">             inManagedObjectContext:(NSManagedObjectContext *)managedObjectContext</div><div class="line">{</div><div class="line">    NSUInteger order = parent<span class="variable">.numberOfChildren</span>;</div><div class="line">    Item *item = [NSEntityDescription insertNewObjectForEntityName:<span class="keyword">self</span><span class="variable">.entityName</span></div><div class="line">                                            inManagedObjectContext:managedObjectContext];</div><div class="line">    item<span class="variable">.title</span> = title;</div><div class="line">    item<span class="variable">.parent</span> = parent;</div><div class="line">    item<span class="variable">.order</span> = @(order);</div><div class="line">    <span class="keyword">return</span> item;</div><div class="line">}</div><div class="line"></div><div class="line">- (NSUInteger)numberOfChildren</div><div class="line">{</div><div class="line">    <span class="keyword">return</span> <span class="keyword">self</span><span class="variable">.children</span><span class="variable">.count</span>;</div><div class="line">}</div></pre></td></tr></table></figure>
+
+<p>为了自动刷新表的内容，我们还会用到一个 fetched results controller，这个东西会管理一个 fecth request 和许多 item，能很好的配合 table view，我们会在下一部分介绍到它：</p>
+<figure class="highlight objc"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div></pre></td><td class="code"><pre><div class="line">- (<span class="built_in">NSFetchedResultsController</span> *)childrenFetchedResultsController</div><div class="line">{</div><div class="line">    NSFetchRequest *request = [NSFetchRequest fetchRequestWithEntityName:[<span class="keyword">self</span><span class="variable">.class</span> entityName]];</div><div class="line">    request<span class="variable">.predicate</span> = [NSPredicate predicateWithFormat:<span class="string">@"parent = %@"</span>, <span class="keyword">self</span>];</div><div class="line">    request<span class="variable">.sortDescriptor</span> = @[[NSSortDescriptor sortDescriptorWithKey:<span class="string">@"order"</span> ascend:<span class="literal">YES</span>]];</div><div class="line">    <span class="keyword">return</span> [[NSFetchResultsController alloc] initWithFetchRequest:request</div><div class="line">                                             managedObjectContext:<span class="keyword">self</span><span class="variable">.mangedObjectContext</span></div><div class="line">                                               sectionNameKeyPath:<span class="literal">nil</span></div><div class="line">}</div></pre></td></tr></table></figure>
+
+<h2 id="添加一个可以接收_Fetched_Results_Controller_反馈的_Table_View">添加一个可以接收 Fetched Results Controller 反馈的 Table View</h2>
+<p>下一步我们要创建一个根 View Controller：一个 Table View，它可以从一个 NSFetchedResultsController 中获取数据。这个 Fetched Results Controller 会管理你的 Fetch Request，如果你还给它设置了一个代理，那么当 Managed Object Context 中有数据变动时，它会及时的通知你，这意味着如果你实现了它的代理方法，那么当你感兴趣的数据发生变化时，你可以自动更你的 Table View。举个栗子，如果你在后台有一个同步线程，而且把数据变化保存到了数据库中，那么你的 Table View 就会自动更新了。</p>
+<h3 id="创建_Table_View_的_Data_Source">创建 Table View 的 Data Source</h3>
+<p>在清爽的 View Controller中，我们演示了如何把 Data Source 从 Table View 中剥离出来，我们要对 Fetched Results Controller 做相同的事情；我们创建了一个单独的类 FetchedResultsControllerDataSource 来扮演 Table View 的 Data Source，同时它也负责监听 Fetched Results Controller 并更新 Table View。我们用 Table View 来初始化这个 FetchedResultsControllerDataSource，像这样：</p>
+<figure class="highlight objc"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div></pre></td><td class="code"><pre><div class="line">- (<span class="keyword">id</span>)initWithTableView:(<span class="built_in">UITableView</span> *)tableView</div><div class="line">{</div><div class="line">    <span class="keyword">self</span> = [<span class="keyword">super</span> init];</div><div class="line">    <span class="keyword">if</span> (<span class="keyword">self</span>) {</div><div class="line">        <span class="keyword">self</span><span class="variable">.tableView</span> = tableView;</div><div class="line">        <span class="keyword">self</span><span class="variable">.tableView</span><span class="variable">.dataSource</span> = <span class="keyword">self</span>;</div><div class="line">    }</div><div class="line">    <span class="keyword">return</span> <span class="keyword">self</span>;</div><div class="line">}</div></pre></td></tr></table></figure>
+
+<p>在我们设置 Fetch Results Controller 的时候，我们也必须给它设置代理，同时执行第一次查询操作。此时很容易忘记调用 <code>perFormFetch:</code>，如果那样的话，你不会获得到任何结果，当然也不会产生任何错误。</p>
+<figure class="highlight"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div></pre></td><td class="code"><pre><div class="line">- (<span class="keyword">void</span>)setFetchedResutlsController:(<span class="built_in">NSFetchedResultsController</span> *)fetchedResultsController</div><div class="line">{</div><div class="line">    _fetchedResultsController = fetchedResultsController;</div><div class="line">    fetchedResultsController<span class="variable">.delegate</span> = <span class="keyword">self</span>;</div><div class="line">    [fetchedResultsController performFetch:<span class="literal">NULL</span>];</div><div class="line">}</div></pre></td></tr></table></figure>
+
+<p>既然我们要实现 UITableViewDataSource 协议，那么下面两个方法是一定要实现的：</p>
+<figure class="highlight objc"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div></pre></td><td class="code"><pre><div class="line">- (<span class="built_in">NSInteger</span>)numberOfSectionsInTableView:(<span class="built_in">UITableView</span> *)tableView</div><div class="line">{</div><div class="line">    <span class="keyword">return</span> <span class="keyword">self</span><span class="variable">.fetchedResultsController</span><span class="variable">.sections</span><span class="variable">.count</span>;</div><div class="line">}</div><div class="line"></div><div class="line">- (<span class="built_in">NSInteger</span>)tableView:(<span class="built_in">UITableView</span> *)tableView numberOfRowsInSection:(<span class="built_in">NSInteger</span>)sectionIndex</div><div class="line">{</div><div class="line">    <span class="keyword">id</span>&lt;NSFetchedResultsSectionInfo&gt; section = <span class="keyword">self</span><span class="variable">.fetchedResultsController</span><span class="variable">.sections</span>[sectionIndex];</div><div class="line">    <span class="keyword">return</span> section<span class="variable">.numberOfObjects</span>;</div><div class="line">}</div></pre></td></tr></table></figure>
+
+<p>在创建 cell 时，需要两步：</p>
+<ul>
+<li>通过 Fetched Results Controller 找到对应的对象</li>
+<li>找到一个可复用的 cell，并通过 Table View 的代理来设置这个 cell</li>
+</ul>
+<p>现在，我们已经有了一个很好的职责分离的设计，View Controller 只需要负责使用传入的对象来更新这个 cell：</p>
+<figure class="highlight"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div></pre></td><td class="code"><pre><div class="line">- (<span class="built_in">UITableViewCell</span>*)tableView:(<span class="built_in">UITableView</span>*)tableView</div><div class="line">        cellForRowAtIndexPath:(<span class="built_in">NSIndexPath</span>*)indexPath</div><div class="line">{</div><div class="line">    <span class="keyword">id</span> object = [<span class="keyword">self</span><span class="variable">.fetchedResultsController</span> objectAtIndexPath:indexPath];</div><div class="line">    <span class="keyword">id</span> cell = [tableView dequeueReusableCellWithIdentifier:<span class="keyword">self</span><span class="variable">.reuseIdentifier</span></div><div class="line">                                              forIndexPath:indexPath];</div><div class="line">    [<span class="keyword">self</span><span class="variable">.delegate</span> configureCell:cell withObject:object];</div><div class="line">    <span class="keyword">return</span> cell;</div><div class="line">}</div></pre></td></tr></table></figure>
+
+<h3 id="创建_Table_View_Controller">创建 Table View Controller</h3>
+<p>到了这里，我们可以使用我们刚才创建的类来创建一个 View Controller 展示 Item 列表了。在栗子应用中，我们用到了一个 Storyboard，在 Storyboard 中添加了一个以 Table View Controller 为根的 Navigation Controller，这样会自动把这个 Table View Controller 设为数据源，但是我们不想这么做。所以，在 viewDidLoad 中，我们要添加下面这些代码：</p>
+<figure class="highlight objc"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div></pre></td><td class="code"><pre><div class="line">fetchedResultsControllerDataSource =</div><div class="line">    [[FetchedResultsControllerDataSource alloc] initWithTableView:<span class="keyword">self</span><span class="variable">.tableView</span>];</div><div class="line"><span class="keyword">self</span><span class="variable">.fetchedResultsControllerDataSource</span><span class="variable">.fetchedResultsController</span> =</div><div class="line"><span class="keyword">self</span><span class="variable">.parent</span><span class="variable">.childrenFetchedResultsController</span>;</div><div class="line">fetchedResultsControllerDataSource<span class="variable">.delegate</span> = <span class="keyword">self</span>;</div><div class="line">fetchedResultsControllerDataSource<span class="variable">.reuseIdentifier</span> = <span class="string">@"Cell"</span>;</div></pre></td></tr></table></figure>
+
+<p>在 Fetched Results Controller Data Source 的初始化函数中会设置 Table View 的 Data Source，Reuse Identifer 也需要与 Storyboard 中的对应上。我们还需要实现代理方法：</p>
+<figure class="highlight objc"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div></pre></td><td class="code"><pre><div class="line">- (<span class="keyword">void</span>)configureCell:(<span class="keyword">id</span>)theCell withObject:(<span class="keyword">id</span>)object</div><div class="line">{</div><div class="line">    <span class="built_in">UITableViewCell</span>* cell = theCell;</div><div class="line">    Item* item = object;</div><div class="line">    cell<span class="variable">.textLabel</span><span class="variable">.text</span> = item<span class="variable">.title</span>;</div><div class="line">}</div></pre></td></tr></table></figure>
+
+<p>当然，除了设置 TextLabel，你还可以对许多其它的东西进行设置，你随便了。现在，我们已经为显示数据做好了一切准备，但是还是空空如也，什么都没有显示出来。</p>
+<h2 id="添加交互">添加交互</h2>
+<p>我们会添加几种数据的交互方法：首先，会加入一个能添加 Item 的方法；然后，会实现 Fetched Results Controller 的代理来刷新 Table View；最后添加对删除和恢复数据的支持。</p>
+<h3 id="添加_Item">添加 Item</h3>
+<p>为了添加Item，我从 <a href="http://www.realmacsoftware.com/clear/" target="_blank" rel="external">Clear</a> 剽窃了一种交互方式，顺便说一句，Clear 是我认为的最美的应用之一。我们把一个 Text Field 设置为 Table View 的 header，然后修改 Table View 的 Content Inset 来使 Text Field 默认为隐藏状态。跟往常一样，完整的代码放在 GitHub 上，下面这几行是在 textFieldShouldReturn 中比较关键的：</p>
+<figure class="highlight objc"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div></pre></td><td class="code"><pre><div class="line">[Item insertItemWithTitle:title</div><div class="line">                   parent:<span class="keyword">self</span><span class="variable">.parent</span></div><div class="line">   inManagedObjectContext:<span class="keyword">self</span><span class="variable">.parent</span><span class="variable">.managedObjectContext</span>];</div><div class="line">textField<span class="variable">.text</span> = <span class="string">@""</span>;</div><div class="line">[textField resignFirstResponder];</div></pre></td></tr></table></figure>
+
+<h3 id="监听数据变化">监听数据变化</h3>
+<p>下一步是确保在有新的 Item 插入时，你的 Table View 也会插入一行。有几种方法，可以达成这一目的，我们选择了实现 Fetched Results Controller 的代理的方法：</p>
+<figure class="highlight objc"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div></pre></td><td class="code"><pre><div class="line">- (<span class="keyword">void</span>)controller:(<span class="built_in">NSFetchedResultsController</span>*)controller</div><div class="line">   didChangeObject:(<span class="keyword">id</span>)anObject</div><div class="line">       atIndexPath:(<span class="built_in">NSIndexPath</span>*)indexPath</div><div class="line">     forChangeType:(<span class="built_in">NSFetchedResultsChangeType</span>)type</div><div class="line">      newIndexPath:(<span class="built_in">NSIndexPath</span>*)newIndexPath</div><div class="line">{</div><div class="line">    <span class="keyword">if</span> (type == NSFetchedResultsChangeInsert) {</div><div class="line">        [<span class="keyword">self</span><span class="variable">.tableView</span> insertRowsAtIndexPaths:@[newIndexPath]</div><div class="line">                              withRowAnimation:UITableViewRowAnimationAutomatic];</div><div class="line">    }</div><div class="line">}</div></pre></td></tr></table></figure>
+
+<p>当有删除、更改或者移动的时候，Fetched Results Controller 调用这个方法。如果你同时有多个更改的话，你需要再实现另外两个方法来让 Table View 把这些改变一次性展示出来。对于一次简单的插入或删除一个 Item 的操作，可能表现得不明显，但是当你实现数据同步时，这样做会变得很漂亮。</p>
+<figure class="highlight objc"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div></pre></td><td class="code"><pre><div class="line">- (<span class="keyword">void</span>)controllerWillChangeContent:(<span class="built_in">NSFetchedResultsController</span>*)controller</div><div class="line">{</div><div class="line">    [<span class="keyword">self</span><span class="variable">.tableView</span> beginUpdates];</div><div class="line">    }</div><div class="line"></div><div class="line">- (<span class="keyword">void</span>)controllerDidChangeContent:(<span class="built_in">NSFetchedResultsController</span>*)controller</div><div class="line">{</div><div class="line">    [<span class="keyword">self</span><span class="variable">.tableView</span> endUpdates];</div><div class="line">}</div></pre></td></tr></table></figure>
+
+<h3 id="使用_Collection_View">使用 Collection View</h3>
+<p>Fetched Results Controller 不仅仅可以与 Table View 合作，它可以用到任何种类的 View 中。因为它是基于 Index Path 的，所以它也可以与 Collection View 一起工作得相当完美，尽管你可能要悲催的修改一些代码，因为 Collection View 没有 beginUpdates 和 endUpdates，只有一个 performBatchUpdates。所以你要把你获得的所有的更改都收集起来，然后再 controllerDidChangeContent 中一次性把改变都展示出来，想看栗子可以戳<a href="https://github.com/AshFurrow/UICollectionView-NSFetchedResultsController" target="_blank" rel="external">这里</a>。</p>
+<h3 id="实现你自己的_Fetched_Results_Controller">实现你自己的 Fetched Results Controller</h3>
+<p>你可以不用 NSFetchedResultsController，实际上，你可以为你的应用定制一些东西，能变得更有效率。你可以监听 NSManagedObjectContextOjbectsDidChangeNotification，当你接收到这个事件时，userInfo 字典会包含更改的、插入的、删除的对象，那么你可以随意处理它们了。</p>
+<h2 id="传递模型对象">传递模型对象</h2>
+<p>有了添加和显示 Item 的功能之后，可以着手开始开发添加子列表功能了。你可以在 Storyboard 里把一个 cell 拖到 View Controller 中来创建一个 Segue，最好给这个 Segue 命名，如果我们在同一个 View Controller 中有许多 Segue 的话，我们可以找到要找的 Segue。</p>
+<p>我处理 Segue 的方法如下：首先，要找到要找的 Segue；然后对每一个 Segue，为它们的目标 View Controller，创建一个单独的方法。</p>
+<figure class="highlight objc"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div></pre></td><td class="code"><pre><div class="line">- (<span class="keyword">void</span>)prepareForSegue:(UIStoryboardSegue *)segue sender:(<span class="keyword">id</span>)sender</div><div class="line">{</div><div class="line">    [<span class="keyword">super</span> prepareForSegue:segue sender:sender];</div><div class="line">    <span class="keyword">if</span> ([segue<span class="variable">.identifier</span> isEqualToString:selectItemSegue]) {</div><div class="line">        [<span class="keyword">self</span> presentSubItemViewController:segue<span class="variable">.destinationViewController</span>]</div><div class="line">    }</div><div class="line">}</div><div class="line"></div><div class="line">- (<span class="keyword">void</span>)presentSubItemViewController:(ItemViewController *)subItemViewController</div><div class="line">{</div><div class="line">    Item *item = [<span class="keyword">self</span><span class="variable">.fetchedResultsControllerDataSource</span> selectedItem];</div><div class="line">    subItemViewController<span class="variable">.parent</span> = item;</div><div class="line">}</div></pre></td></tr></table></figure>
+
+<p>子 View Controller 需要的唯一的东西就是 Item，它可以从这个 Item 中获得到 Managed Object Context。我们从 Data Source 中得到被选中的 Item，然后把它传递给子 View Controller 就行了，就是这么简单。</p>
+<p>一个非常常见的坏习惯就是把 Managed Object Context 作为应用代理的一个属性，然后从任意的地方都可以访问到它。如果你想在你的代码中的某一个特定的部分使用另外一个 Managed Object Context 的话，按照上面的方法做回是代码变得非常难以重构，单元测试做起来也会很困难。</p>
+<p>现在，试着把一个 Item 添加到子列表中，你的应用可能会华丽的跪掉，因为我们现在有两个 Fetched View Controller —— 一个用于最顶部的 View Controller，另一个用于根 View Controller —— 第二个会试图在未被显示时刷新屏幕，这样会导致崩溃。解决方法是告诉 Data Source 停止对 Fetched Results Controller 的监听：</p>
+<figure class="highlight objc"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div></pre></td><td class="code"><pre><div class="line">- (<span class="keyword">void</span>)viewWillAppear:(<span class="built_in">BOOL</span>)animated</div><div class="line">{</div><div class="line">    [<span class="keyword">super</span> viewWillAppear:animated];</div><div class="line">    <span class="keyword">self</span><span class="variable">.fetchedResultsControllerDataSource</span><span class="variable">.paused</span> = <span class="literal">NO</span>;</div><div class="line">}</div><div class="line"></div><div class="line">- (<span class="keyword">void</span>)viewWillDisappear:(<span class="built_in">BOOL</span>)animated</div><div class="line">{</div><div class="line">    [<span class="keyword">super</span> viewWillDisappear:animated];</div><div class="line">    <span class="keyword">self</span><span class="variable">.fetchedResultsControllerDataSource</span><span class="variable">.paused</span> = <span class="literal">YES</span>;</div><div class="line">}</div></pre></td></tr></table></figure>
+
+<p>实现以上目的的一个方式是在 Data Source 中把 Fetched Results Controller 的代理设为 nil，这样就不会再收到任何更新的通知了：</p>
+<figure class="highlight objc"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div></pre></td><td class="code"><pre><div class="line">- (<span class="keyword">void</span>)setPaused:(<span class="built_in">BOOL</span>)paused</div><div class="line">{</div><div class="line">    _paused = paused;</div><div class="line">    <span class="keyword">if</span> (paused) {</div><div class="line">        <span class="keyword">self</span><span class="variable">.fetchedResultsController</span><span class="variable">.delegate</span> = <span class="literal">nil</span>;</div><div class="line">    } <span class="keyword">else</span> {</div><div class="line">        <span class="keyword">self</span><span class="variable">.fetchedResultsController</span><span class="variable">.delegate</span> = <span class="keyword">self</span>;</div><div class="line">        [<span class="keyword">self</span><span class="variable">.fetchedResultsController</span> performFetch:<span class="literal">NULL</span>];</div><div class="line">        [<span class="keyword">self</span><span class="variable">.tableView</span> reloadData];</div><div class="line">    }</div><div class="line">}</div></pre></td></tr></table></figure>
+
+<p>PerformFetch 会确保你的 Data Source 是最新的，当然，还有更好的实现方法，就是不把代理设为空，而是在暂停状态下记录下所有的变化，然后在离开暂停状态的时候刷新 Table View。</p>
+<h2 id="删除">删除</h2>
+<p>我们需要通过几个步骤来添加删除功能：首先，找到要提供删除功能的 Table View；然后，把对象从 Core Data 中删除，并确保剩下的 Item 的 Order 属性仍然配置正确。</p>
+<p>为了添加滑动删除的支持，需要实现 Data Source 的下面两个方法：</p>
+<figure class="highlight objc"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div></pre></td><td class="code"><pre><div class="line">- (<span class="built_in">BOOL</span>)tableView:(<span class="built_in">UITableView</span>*)tableView canEditRowAtIndexPath:(<span class="built_in">NSIndexPath</span>*)indexPath</div><div class="line">{</div><div class="line">    <span class="keyword">return</span> <span class="literal">YES</span>;</div><div class="line">}</div><div class="line"></div><div class="line">- (<span class="keyword">void</span>)tableView:(<span class="built_in">UITableView</span> *)tableView commitEditingStyle:(UITableViewCellEditingStyle)editingStyle forRowAtIndexPath:(<span class="built_in">NSIndexPath</span> *)indexPath</div><div class="line">{</div><div class="line">    <span class="keyword">if</span> (editingStyle == UITableViewCellEditingStyleDelete) {</div><div class="line">        <span class="keyword">id</span> object = [<span class="keyword">self</span><span class="variable">.fetchedResultsController</span> objectAtIndexPath:indexPath];</div><div class="line">        [<span class="keyword">self</span><span class="variable">.delegate</span> deleteObject:object];</div><div class="line">    }</div><div class="line">}</div></pre></td></tr></table></figure>
+
+<p>我们需要告诉代理（那个 View Controller）来删除对象，而不是直接把对象删除了，这样做就可以不必与 Data Source 共享持久化存储层，也可以使自定义动作更容易维护；相应的 View Controller 仅仅需要调用 Managed Object Context 的 deleteObject: 即可。</p>
+<p>还有另外两个重要的问题没有解决：如果处理我们删除的 Item 的 Children；在删除之后，如何处理其他 Item 的 Order。对于前者，Core Data 提供了良好的删除支持：在我们的数据模型中，我们可以把 Children 关系的删除规则设为 Cascade。对于后者，我们可以重写 prepareForDeletion 方法，在方法中把所有 Order 比被删除的 Item 高的邻居 Item 的 Order 都更新：</p>
+<figure class="highlight objc"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div></pre></td><td class="code"><pre><div class="line">- (<span class="keyword">void</span>)prepareForDeletion</div><div class="line">{</div><div class="line">    <span class="built_in">NSSet</span> *siblings = <span class="keyword">self</span><span class="variable">.parent</span><span class="variable">.children</span>;</div><div class="line">    NSPredicate *predicate = [NSPredicate predicateWithFormat:<span class="string">@"order &gt; %@"</span>, <span class="keyword">self</span><span class="variable">.order</span>];</div><div class="line">    <span class="built_in">NSSet</span> *siblingsAfterSelf = [siblings filteredSetUsingPredicate:predicate];</div><div class="line">    [siblingsAfterSelf enumerateObjectsUsingBlock:^(Item* sibling, <span class="built_in">BOOL</span> *stop) {</div><div class="line">        sibling<span class="variable">.order</span> = @(sibling<span class="variable">.order</span><span class="variable">.integerValue</span> - <span class="number">1</span>);</div><div class="line">    }];</div><div class="line">}</div></pre></td></tr></table></figure>
+
+<p>现在我们几乎已经完成了对删除的支持，可以触控 Table View 的 Cell 来删除对象了，最后一步就是实现一些必须的代码，来确保当有 Item 被删除时，它对应的 Cell 也要被删除。在我们的 Data Source 的 controller:didChangeObject: 方法中，需要添加一个 if 分支：</p>
+<figure class="highlight objc"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div></pre></td><td class="code"><pre><div class="line">...</div><div class="line"><span class="keyword">else</span> <span class="keyword">if</span> (type == NSFetchedResultsChangeDelete) {</div><div class="line">    [<span class="keyword">self</span><span class="variable">.tableView</span> deleteRowsAtIndexPaths:@[indexPath]</div><div class="line">                          withRowAnimation:UITableViewRowAnimationAutomatic];</div><div class="line">}</div></pre></td></tr></table></figure>
+
+<h2 id="添加_Undo_支持">添加 Undo 支持</h2>
+<p>Core Data 另一个非常漂亮的功能就是它整合了 Undo 支持。我们需要添加 Shake to Undo （晃动以恢复，iPhone 的一个功能）功能，第一步就是告诉应用我们能做这个：</p>
+<figure class="highlight objc"><table><tr><td class="gutter"><pre><div class="line">1</div></pre></td><td class="code"><pre><div class="line">application<span class="variable">.applicationSupportsShakeToEdit</span> = <span class="literal">YES</span>;</div></pre></td></tr></table></figure>
+
+<p>现在，当用户晃动了手机，应用就会去找第一个响应者要它的 Undo Manager，然后来执行 Undo 操作。在<a href="../Views/CreatingCustomControls.md">上个月的这篇文章</a>中，我们看到一个 View Controller 也是在响应链中的，这就是我们下面要用到的特性。我们要在 View Controller 中重写 UIResponder 的下面两个方法：</p>
+<figure class="highlight objc"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div></pre></td><td class="code"><pre><div class="line">- (<span class="built_in">BOOL</span>)canBecomeFirstResponder {</div><div class="line">    <span class="keyword">return</span> <span class="literal">YES</span>;</div><div class="line">}</div><div class="line"></div><div class="line">- (NSUndoManager*)undoManager</div><div class="line">{</div><div class="line">    <span class="keyword">return</span> <span class="keyword">self</span><span class="variable">.managedObjectContext</span><span class="variable">.undoManager</span>;</div><div class="line">}</div></pre></td></tr></table></figure>
+
+<p>现在，当有晃动手势事件发生时，Managed Object Context 的 Undo Manager 会获得一个 Undo 消息，并 Undo 最近的一次变化。记住，在 iOS 上，一个 Managed Object Context 默认是没有 Undo Manager 的（但是在 Mac 上是有的），所以我们在配置 Core Data 栈结构时，需要手动添加这个 Undo Manager：</p>
+<figure class="highlight objc"><table><tr><td class="gutter"><pre><div class="line">1</div></pre></td><td class="code"><pre><div class="line"><span class="keyword">self</span><span class="variable">.managedObjectContext</span><span class="variable">.undoManager</span> = [[NSUndoManager alloc] init];</div></pre></td></tr></table></figure>
+
+<p>现在基本上已经完成了 Undo 功能了，当你晃动手机时，iOS 会弹出一个对话框，对话框有两个按钮：Undo 和 Cancel。Core Data 会自动把数据的变化分组，举个栗子，addItem:parent 会被分为一个 Undo 动作，而删除会被分为另外的 Undo 动作。</p>
+<p>为了能使用户更好的使用 Undo 功能，我们可以给动作命名，只要稍稍修改一下 textFieldShouldReturn: 就可以了：</p>
+<figure class="highlight objc"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div></pre></td><td class="code"><pre><div class="line"><span class="built_in">NSString</span>* title = textField<span class="variable">.text</span>;</div><div class="line"><span class="built_in">NSString</span>* actionName = [<span class="built_in">NSString</span> stringWithFormat:</div><div class="line">    NSLocalizedString(<span class="string">@"add item \"%@\""</span>, <span class="string">@"Undo action name of add item"</span>), title];</div><div class="line">    [<span class="keyword">self</span><span class="variable">.undoManager</span> setActionName:actionName];</div><div class="line">    [<span class="keyword">self</span><span class="variable">.store</span> addItem:title parent:<span class="literal">nil</span>];</div></pre></td></tr></table></figure>
+
+<p>这样的话，当用户晃动手机时，弹框上的文字就不仅仅是一个 Undo 了。</p>
+<h2 id="编辑">编辑</h2>
+<p>在栗子代码中是不支持编辑的，但是在实际使用中，仅仅修改 Item 的属性也是常见场景。比如，只修改 Item 的标题，这个栗子看起来影响不大；但是把一个 Item foo 的 Parent 变成 bar，这会导致许多变化。</p>
+<h2 id="排序">排序</h2>
+<p>对 Cell 进行重新排序也没有支持，但是很容易实现。不过这有一个需要注意的地方：当你允许用户手动对 Item 进行排序，你必须更新 Item 的 Order 属性，这会使 Fetched Results Controller 调用它的相关代理方法。这一过程在 <a href="https://developer.apple.com/library/ios/documentation/CoreData/Reference/NSFetchedResultsControllerDelegate_Protocol/Reference/Reference.html#//apple_ref/doc/uid/TP40008228-CH1-SW14" target="_blank" rel="external">NSFetchedResultsControllerDelegate documentation</a> 中有解释。</p>
+<h2 id="保存">保存</h2>
+<p>保存很简单，只需要调用 Managed Object Context 的 save 方法即可，唯一困难的地方就是保存时机，苹果的示例代码在 applicationWillTerminate: 中保存，但是你也可以根据情况把它写在 applicationDidEnterBackground: 或者在运行时保存。</p>
+<h2 id="本话题的更多文章">本话题的更多文章</h2>
+<ul>
+<li><a href="../../../../2013/09/22/core-data-overview/">Core Data概述</a></li>
+</ul>
+<h2 id="备注">备注</h2>
+<p>[1] 原文链接：<a href="http://www.objc.io/issue-4/full-core-data-application.html" target="_blank" rel="external">http://www.objc.io/issue-4/full-core-data-application.html</a>  </p>
+<p>[2] 由于我没有实践过 Storyboard 方面的编程，文中关于 Storyboard 的相关段落翻译可能会不尽准确，请见谅。有兴趣的可以移步原文。</p>
+
+      
+    </div>
+    <footer>
+      
+        
+        
+  
+  <div class="tags">
+    <a href="/tags/iOS/">iOS</a>, <a href="/tags/Core-Data/">Core Data</a>
+  </div>
+
+        
+      
+      <div class="clearfix"></div>
+    </footer>
+  </div>
+</article>
+
+
+  <div class="ds-thread" data-thread-key="2014/09/23/一个完整的-Core-Data-应用/"></div>
+
+</div></div>
+    <aside id="sidebar" class="alignright">
+  
+
+  
+<div class="widget tag">
+  <h3 class="title">Tags</h3>
+  <ul class="entry">
+  
+    <li><a href="/tags/Core-Data/">Core Data</a><small>1</small></li>
+  
+    <li><a href="/tags/GoLang/">GoLang</a><small>1</small></li>
+  
+    <li><a href="/tags/iOS/">iOS</a><small>2</small></li>
+  
+    <li><a href="/tags/算法/">算法</a><small>1</small></li>
+  
+  </ul>
+</div>
+
+
+  
+<div class="widget tag">
+  <h3 class="title">Recent Posts</h3>
+  <ul class="entry">
+    
+      <li>
+        <a href="/2014/09/23/一个完整的-Core-Data-应用/">一个完整的 Core Data 应用</a>
+      </li>
+    
+      <li>
+        <a href="/2014/09/23/在iOS下访问通讯录/">在iOS下访问通讯录</a>
+      </li>
+    
+      <li>
+        <a href="/2014/09/23/hello-world/">Hello World</a>
+      </li>
+    
+      <li>
+        <a href="/2014/09/22/poj-3974-最长连续回文串-manachers-algorithm/">poj 3974 最长连续回文串 manachers algorithm</a>
+      </li>
+    
+      <li>
+        <a href="/2014/09/22/beedb的一段反射代码研究/">beedb的一段反射代码研究</a>
+      </li>
+    
+  </ul>
+</div>
+
+
+  <iframe width="100%" height="550" class="share_self"  frameborder="0" scrolling="no" src="http://widget.weibo.com/weiboshow/index.php?language=&width=0&height=550&fansRow=2&ptype=1&speed=0&skin=1&isTitle=1&noborder=1&isWeibo=1&isFans=1&uid=2517375827&verifier=5e91864c&dpc=1"></iframe>
+
+</aside>
+    <div class="clearfix"></div>
+  </div>
+  <footer id="footer" class="inner"><div class="alignleft">
+  
+  &copy; 2014 Lanner
+  
+</div>
+<div class="clearfix"></div></footer>
+  <script src="//ajax.useso.com/ajax/libs/jquery/2.0.3/jquery.min.js"></script>
+<script src="/js/jquery.imagesloaded.min.js"></script>
+<script src="/js/gallery.js"></script>
+
+
+
+
+<script type="text/javascript">
+var duoshuoQuery = {short_name:"lanner"};
+        (function() {
+                var ds = document.createElement('script');
+                ds.type = 'text/javascript';ds.async = true;
+                ds.src = 'http://static.duoshuo.com/embed.js';
+                ds.charset = 'UTF-8';
+                (document.getElementsByTagName('head')[0]
+                || document.getElementsByTagName('body')[0]).appendChild(ds);
+        })();
+</script>
+
+</body>
+</html>

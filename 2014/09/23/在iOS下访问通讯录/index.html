@@ -1,0 +1,189 @@
+<!DOCTYPE HTML>
+<html>
+<head>
+  <meta charset="utf-8">
+  
+  <title>在iOS下访问通讯录 | Lanner Memo</title>
+  <meta name="author" content="Lanner">
+  
+  <meta name="description" content="现在写应该晚了很多了，毕竟iOS 6已经出来大半年了，不过我知道昨天才搞明白iOS 6下通讯录权限正确的获取方法，就在这做个记录吧。
+啥也不说，先上代码。
+1234567891011121314151617181920- (void)initAddressBook{    _addressBook = NULL;    __block BOOL accessGranted = NO;    dispatch_semaphore_t sema = dispatch_semaphore_create(0);    if (ABAddressBookRequestAccessWithCompletion != NULL) { // we&#39;re on iOS 6        _addressBook = ABAddressBookCreateWithOptions(NULL, nil);        ABAddressBookRequestAccessWithCompletion(_addressBook, ^(bool granted, CFErrorRef error) {        accessGranted = granted;        dispatch_semaphore_signal(sema);    });    dispatch_semaphore_wait(sema, DISPATCH_TIME_FOREVER);    dispatch_release(sema);    if (!accessGranted)        _addressBook = nil;    } else { // we&#39;re on iOS 5 or older        _addressBook = ABAddressBookCreate();    }}">
+  
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+
+  <meta property="og:title" content="在iOS下访问通讯录"/>
+  <meta property="og:site_name" content="Lanner Memo"/>
+
+  
+    <meta property="og:image" content="undefined"/>
+  
+
+  <link href="/favicon.png" rel="icon" type="image/x-ico">
+  <link rel="alternate" href="/atom.xml" title="Lanner Memo" type="application/atom+xml">
+  <link rel="stylesheet" href="/css/style.css" media="screen" type="text/css">
+  <!--[if lt IE 9]><script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script><![endif]-->
+  
+
+</head>
+
+
+<body>
+  <header id="header" class="inner"><div class="alignleft">
+  <h1><a href="/">Lanner Memo</a></h1>
+  <h2><a href="/">Lanner的菜鸟笔记</a></h2>
+</div>
+<nav id="main-nav" class="alignright">
+  <ul>
+    
+      <li><a href="/">Home</a></li>
+    
+      <li><a href="/About">关于Lanner</a></li>
+    
+      <li><a href="/nonsense">碎碎念</a></li>
+    
+  </ul>
+  <div class="clearfix"></div>
+</nav>
+<div class="clearfix"></div></header>
+  <div id="content" class="inner">
+    <div id="main-col" class="alignleft"><div id="wrapper"><article class="post">
+  
+  <div class="post-content">
+    <header>
+      
+        <div class="icon"></div>
+        <time datetime="2014-09-23T15:16:59.000Z"><a href="/2014/09/23/在iOS下访问通讯录/">Sep 23 2014</a></time>
+      
+      
+  
+    <h1 class="title">在iOS下访问通讯录</h1>
+  
+
+    </header>
+    <div class="entry">
+      
+        <p>现在写应该晚了很多了，毕竟iOS 6已经出来大半年了，不过我知道昨天才搞明白iOS 6下通讯录权限正确的获取方法，就在这做个记录吧。</p>
+<p>啥也不说，先上代码。</p>
+<figure class="highlight objc"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div><div class="line">16</div><div class="line">17</div><div class="line">18</div><div class="line">19</div><div class="line">20</div></pre></td><td class="code"><pre><div class="line">- (<span class="keyword">void</span>)initAddressBook</div><div class="line">{</div><div class="line">    _addressBook = <span class="literal">NULL</span>;</div><div class="line">    __block <span class="built_in">BOOL</span> accessGranted = <span class="literal">NO</span>;</div><div class="line"></div><div class="line">    dispatch_semaphore_t sema = dispatch_semaphore_create(<span class="number">0</span>);</div><div class="line">    <span class="keyword">if</span> (ABAddressBookRequestAccessWithCompletion != <span class="literal">NULL</span>) { <span class="comment">// we're on iOS 6</span></div><div class="line">        _addressBook = ABAddressBookCreateWithOptions(<span class="literal">NULL</span>, <span class="literal">nil</span>);</div><div class="line">        ABAddressBookRequestAccessWithCompletion(_addressBook, ^(<span class="keyword">bool</span> granted, CFErrorRef error) {</div><div class="line">        accessGranted = granted;</div><div class="line">        dispatch_semaphore_signal(sema);</div><div class="line">    });</div><div class="line">    dispatch_semaphore_wait(sema, DISPATCH_TIME_FOREVER);</div><div class="line">    dispatch_release(sema);</div><div class="line">    <span class="keyword">if</span> (!accessGranted)</div><div class="line">        _addressBook = <span class="literal">nil</span>;</div><div class="line">    } <span class="keyword">else</span> { <span class="comment">// we're on iOS 5 or older</span></div><div class="line">        _addressBook = ABAddressBookCreate();</div><div class="line">    }</div><div class="line">}</div></pre></td></tr></table></figure>
+
+<a id="more"></a>
+
+<p>首先判断当前运行平台是 6.0 还是 5.0，判断标准就是是否存在 ABAddressBookRequestAccessWithCompletion 这个函数（当然用别的 iOS 6 上新加的函数作为判断依据也可以），如果不存在这个函数，说明在不是 iOS 6，不需要请求权限，直接走 ABAddressBookCreate() 结束；如果是在 iOS 6 下，就需要获得用户授权方可访问通讯录，要不然就悲剧了，轻者出现逻辑bug，重者崩溃。</p>
+<p>获得通讯录授权的步骤如下：</p>
+<p>使用<code>ABAddressBookCreateWithOptions(NULL, nil)</code>返回一个通讯录指针<code>_addressBook</code>，注意，这时只是获得一个暂时的指针，由于没有获得授权，还不能使用。<br>再调用<code>ABAddressBookRequestAccessWithCompletion(_addressBook, ^(bool granted, CFErrorRef error) { ... })</code>，向用户请求通讯录授权。如果是第一次运行，到这句话时，iPhone会弹出一个对话框，”xxx想访问你的日历”，对就是日历，估计苹果认为在中国日历和通讯录是一个东西（不得不吐槽一下苹果这个翻译上的低级bug了）。如果用户点击了“好”，<code>_addressBook</code>就生效了，以后你想怎么搞就怎么搞了；但是，如果用户点击了“不允许”，<code>_addressBook</code>就不能接着使用了，接着使用的下场就是一个字儿：跪了！</p>
+<p>那么<code>dispatch_semaphore_t sema</code>这个东西是干嘛的呢？先看看苹果官方开发文档上对<code>ABAddressBookRequestAccessWithCompletion</code>函数的解释是。</p>
+<blockquote>
+<p>Users are able to grant or deny access to contact data on a per-app basis. To request access to contact data, call the ABAddressBookRequestAccessWithCompletion function after calling the ABAddressBookCreateWithOptions function. The ABAddressBookRequestAccessWithCompletion function does not block the app while the user is being asked to grant or deny access. Until access has been granted, the ABAddressBookRef object will not contain any contacts, and any attempt to modify contacts fails with a kABOperationNotPermittedByUserError error. The user is prompted only the first time access is requested; any subsequent calls to ABAddressBookCreateWithOptions will use the existing permissions. The completion handler is called on an arbitrary queue. If the ABAddressBookRef object is used throughout the app, then all usage must be dispatched to the same queue to use ABAddressBookRef in a thread-safe manner.<br>（用户可以同意或拒绝应用访问联系人数据。为了获取联系人数据访问权限，要在 <code>ABAddressBookCreateWithOptions</code>后调用<code>ABAddressBookRequestAccessWithCompletion</code>，<strong>当用户被询问是否同意授权时，应用不会被挂起</strong>。直到用户同意授权时，系统不会返回一个包含联系人数据的<code>ABAddressBookRef</code>对象，此时，一切修改联系人的尝试都会引起<code>kABOperationNotPermittedByUserError</code>错误。<strong>只有第一次请求授权时，用户才会看到弹出的对话框</strong>；之后的请求会根据已经存在的权限处理。Completion句柄是在其他线程队列里被调用的，如果整个应用中都在使用<code>ABAddressBookRef</code>对象，那么一定要保证线程安全。）</p>
+</blockquote>
+<p>这里有两处加粗的地方需要注意，咱们从前往后说：</p>
+<ul>
+<li>用户被询问时，应用不会被挂起。也就是说，在<code>ABAddressBookRequestWithCompletion</code>函数执行后，会同时发生两件事儿：第一件、iPhone弹出对话框，询问用户是否同意；第二件、进入到<code>if (!accessGranted)</code>这个判断语句中。一个前提是用户的手肯定没那么快，不可能在这条判断进行时就已经点了”好”。也就是说，此时<code>accessGranted</code>一定是NO，那么无论你怎么挣扎，必然会有<code>_addressBook = nil</code>，好，永远都无法访问通讯录了。为了防止这样的悲剧发生，就需要加入一个信号量来同步这两件事儿。创建一个信号量<code>sema</code>，并把它的初始值设为0，一方面主线程等待这个<code>sema</code>变为正值之后，再执行对<code>accessGranted</code>的判断；另一方面，在<code>ABAddressBookRequestWithCompletion</code>的回调函数中，对信号量<code>sema</code>执行v操作<code>(dispatch_semaphore_signal)</code>，让它变为正值，这样就实现了两个线程的同步，保证在用户同意授权与否后判断用户的授权结果<code>accessGranted</code>。</li>
+<li>只有在第一次请求授权时才会弹出询问对话框，系统会把这次的授权情况记住，在以后的授权请求时，使用相同的授权方式。那么如果用户第一次点击了“不允许”，我们怎么提醒它开启授权呢？就用这个函数吧，<code>ABAddressBookGetAuthorizationStatus()</code>，它会返回一个枚举类型<code>ABAuthorizationStatus</code>，这个枚举类型有四个值，<code>kABAuthorizationStatusNotDetermined</code>（未确定，还未询问授权过时的值）/<code>kABAuthorizationStatusRestricted</code>（受限制，一般不会出现，应该是在系统出现了bug的情况下的值）/<code>kABAuthorizationStatusDenied</code>（拒绝，用户第一次点了“不允许”）/<code>kABAuthorizationStatusAuthorized</code>（同意，用户第一次点了“好”）。这样就可以提出一个改进方案了，在请求授权之前，先判断一下当前的授权情况：如果是未确定，就用<code>ABAddressBookRequestAccessWithCompletion</code>请求授权；如果是允许，那就直接读通讯录；如果是拒绝，就弹出对话框提醒用户可以在iPhone的设置-&gt;隐私-&gt;通讯录中开启授权。</li>
+</ul>
+<p>另外，再说两个小技巧。通讯录授权这种事儿在调试的时候比较困难，因为你一次询问了，系统就会记住，即使卸了重装，它也会把之前的的授权情况完整的记录下来。为了绕开这个问题，可以在每次调试的之前把应用的Bundle Identifier改一下，只要每次的Bundle Identifier不一样，iPhone就会认为这是一个新的应用，再次弹出授权提示了。授权提示的文案也是可以自定义的，只要在应用的.plist文件中加一个键“Privacy - Contacts Usage Description”，把这个键的值设成自己想要的就OK了。</p>
+
+      
+    </div>
+    <footer>
+      
+        
+        
+  
+  <div class="tags">
+    <a href="/tags/iOS/">iOS</a>
+  </div>
+
+        
+      
+      <div class="clearfix"></div>
+    </footer>
+  </div>
+</article>
+
+
+  <div class="ds-thread" data-thread-key="2014/09/23/在iOS下访问通讯录/"></div>
+
+</div></div>
+    <aside id="sidebar" class="alignright">
+  
+
+  
+<div class="widget tag">
+  <h3 class="title">Tags</h3>
+  <ul class="entry">
+  
+    <li><a href="/tags/Core-Data/">Core Data</a><small>1</small></li>
+  
+    <li><a href="/tags/GoLang/">GoLang</a><small>1</small></li>
+  
+    <li><a href="/tags/iOS/">iOS</a><small>2</small></li>
+  
+    <li><a href="/tags/算法/">算法</a><small>1</small></li>
+  
+  </ul>
+</div>
+
+
+  
+<div class="widget tag">
+  <h3 class="title">Recent Posts</h3>
+  <ul class="entry">
+    
+      <li>
+        <a href="/2014/09/23/一个完整的-Core-Data-应用/">一个完整的 Core Data 应用</a>
+      </li>
+    
+      <li>
+        <a href="/2014/09/23/在iOS下访问通讯录/">在iOS下访问通讯录</a>
+      </li>
+    
+      <li>
+        <a href="/2014/09/23/hello-world/">Hello World</a>
+      </li>
+    
+      <li>
+        <a href="/2014/09/22/poj-3974-最长连续回文串-manachers-algorithm/">poj 3974 最长连续回文串 manachers algorithm</a>
+      </li>
+    
+      <li>
+        <a href="/2014/09/22/beedb的一段反射代码研究/">beedb的一段反射代码研究</a>
+      </li>
+    
+  </ul>
+</div>
+
+
+  <iframe width="100%" height="550" class="share_self"  frameborder="0" scrolling="no" src="http://widget.weibo.com/weiboshow/index.php?language=&width=0&height=550&fansRow=2&ptype=1&speed=0&skin=1&isTitle=1&noborder=1&isWeibo=1&isFans=1&uid=2517375827&verifier=5e91864c&dpc=1"></iframe>
+
+</aside>
+    <div class="clearfix"></div>
+  </div>
+  <footer id="footer" class="inner"><div class="alignleft">
+  
+  &copy; 2014 Lanner
+  
+</div>
+<div class="clearfix"></div></footer>
+  <script src="//ajax.useso.com/ajax/libs/jquery/2.0.3/jquery.min.js"></script>
+<script src="/js/jquery.imagesloaded.min.js"></script>
+<script src="/js/gallery.js"></script>
+
+
+
+
+<script type="text/javascript">
+var duoshuoQuery = {short_name:"lanner"};
+        (function() {
+                var ds = document.createElement('script');
+                ds.type = 'text/javascript';ds.async = true;
+                ds.src = 'http://static.duoshuo.com/embed.js';
+                ds.charset = 'UTF-8';
+                (document.getElementsByTagName('head')[0]
+                || document.getElementsByTagName('body')[0]).appendChild(ds);
+        })();
+</script>
+
+</body>
+</html>
