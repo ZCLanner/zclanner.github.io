@@ -35,3 +35,9 @@ $ hexo deploy
 ```
 
 More info: [Deployment](http://hexo.io/docs/deployment.html)
+
+### 表格测试
+
+header1|header2|header3
+-------|-------|-------
+cell1  | cell2 | cell3
