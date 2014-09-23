@@ -709,7 +709,6 @@ figure.highlight {
   line-height: 1.6;
   overflow: auto;
   position: relative;
-  font-size: 0.9em;
 }
 figure.highlight figcaption {
   color: #999;
@@ -726,8 +725,12 @@ figure.highlight pre {
   margin: 0;
 }
 figure.highlight table {
-  margin-top: 0;
+  margin: 0;
   border-spacing: 0;
+}
+figure.highlight table td {
+  border-bottom: 0;
+  padding: 0;
 }
 figure.highlight .gutter {
   color: #999;
