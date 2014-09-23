@@ -1,11 +1,11 @@
 menu:
   Home: /
-  Archives: /archives
+  关于Lanner: /About
 
 widgets:
-- search
 - category
 - tag
+- weibo
 
 excerpt_link: Read More
 
@@ -15,14 +15,14 @@ twitter:
   tweet_count: 5
 
 addthis:
-  enable: true
+  enable: false
   pubid:
-  facebook: true
-  twitter: true
-  google: true
-  pinterest: true
+  facebook: false
+  twitter: false
+  google: false
+  pinterest: false
 
-fancybox: true
+fancybox: false
 
 google_analytics:
 rss:
