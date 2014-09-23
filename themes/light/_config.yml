@@ -6,6 +6,7 @@ menu:
 widgets:
 - category
 - tag
+- recent_posts
 - weibo
 
 excerpt_link: Read More
