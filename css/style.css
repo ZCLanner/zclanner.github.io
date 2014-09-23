@@ -1,4 +1,4 @@
-@import url("//fonts.googleapis.com/css?family=Lato:400,400italic");
+@import url("//fonts.useso.com/css?family=Lato:400,400italic");
 @font-face {
   font-family: 'FontAwesome';
   font-style: normal;
@@ -298,7 +298,6 @@ article .entry blockquote {
   font-family: "Georgia", serif;
   font-size: 1.2em;
   padding: 0 30px 15px;
-  text-align: center;
 }
 article .entry blockquote footer {
   border-top: none;
@@ -314,7 +313,7 @@ article .entry blockquote footer cite:before {
 }
 article .entry code,
 article .entry pre {
-  font-family: Monaco, Menlo, Consolas, Courier New, monospace;
+  font-family: Consolas;
 }
 article .entry code {
   background: #eee;
