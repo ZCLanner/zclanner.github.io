@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8">
   
-  <title>Core Data | Lanner Memo</title>
+  <title>Spring | Lanner Memo</title>
   <meta name="author" content="Lanner">
   
   
@@ -47,7 +47,7 @@
 <div class="clearfix"></div></header>
   <div id="content" class="inner">
     <div id="main-col" class="alignleft"><div id="wrapper">
-<h2 class="archive-title tag">Core Data</h2>
+<h2 class="archive-title tag">Spring</h2>
 
 
   
@@ -57,17 +57,28 @@
     <header>
       
         <div class="icon"></div>
-        <time datetime="2014-09-23T15:26:49.000Z"><a href="/2014/09/23/一个完整的-Core-Data-应用/">Sep 23 2014</a></time>
+        <time datetime="2014-09-24T11:04:04.000Z"><a href="/2014/09/24/build-a-war-with-maven/">Sep 24 2014</a></time>
       
       
   
-    <h1 class="title"><a href="/2014/09/23/一个完整的-Core-Data-应用/">一个完整的 Core Data 应用</a></h1>
+    <h1 class="title"><a href="/2014/09/24/build-a-war-with-maven/">用Maven创建一个war包</a></h1>
   
 
     </header>
     <div class="entry">
       
-        <p>在本文中，我们将会创建一个小而完整的 Core Data 应用，这个应用允许你建立一组层次化的列表，列表的每一个表项可以有它的子列表，这个列表的层次化结构可以是非常非常深的。为了完全的理解 Core Data 的运行机制，我们会手工建立起这个 Core Data 的堆栈结构，而不是使用 Xcode 提供的模板。示例代码可以到 <a href="https://github.com/objcio/issue-4-full-core-data-application" target="_blank" rel="external">GitHub</a> 上查看。</p>
+        <p><a href="2014/09/24/common-java-tools/">上回书</a>说到，可以把war包部署到tomcat或jboss的目录中，来搭建一个网站。war包中最主要的文件就是WEB-INF目录下的web.xml文件，它指定了url的处理规则。那现在就可以YY一下，如果从零开始，搭建一个网站的话，都需要哪些步骤？</p>
+<ol>
+<li>写java代码，主要包括一些servlet的子类，也可能会写一些filter</li>
+<li>写前段代码，可能是jsp的、可能是velocity的，也可能是单纯的html</li>
+<li>引入必要的静态资源，像js、css或者图片等</li>
+<li>写web.xml，定义url处理规则</li>
+<li>编译java源码</li>
+<li>单元测试</li>
+<li>建立目录结构，把编译好的class文件、web.xml、前端模板、静态资源按照war包的目录结构组织起来</li>
+<li>达成war包并拷贝到tomcat的目录下，重启tomcat</li>
+</ol>
+<p>只是YY一下，就需要有8个步骤了，实际操作中可能还会有想不到的意外，像环境问题等。如果工程庞大的话，这八个步骤全部手工操作，难免会有遗漏，这个时候maven就重天而降了。</p>
 
       
     </div>
@@ -75,8 +86,40 @@
       
         
           <div class="alignleft">
-            <a href="/2014/09/23/一个完整的-Core-Data-应用/#more" class="more-link">Read More</a>
+            <a href="/2014/09/24/build-a-war-with-maven/#more" class="more-link">Read More</a>
           </div>
+        
+        
+      
+      <div class="clearfix"></div>
+    </footer>
+  </div>
+</article>
+
+
+
+  
+    <article class="post">
+  
+  <div class="post-content">
+    <header>
+      
+        <div class="icon"></div>
+        <time datetime="2014-09-24T10:52:05.000Z"><a href="/2014/09/24/Spring笔记-Bean是如何被加载到内存中的/">Sep 24 2014</a></time>
+      
+      
+  
+    <h1 class="title"><a href="/2014/09/24/Spring笔记-Bean是如何被加载到内存中的/">Spring笔记--Bean是如何被加载到内存中的</a></h1>
+  
+
+    </header>
+    <div class="entry">
+      
+        
+      
+    </div>
+    <footer>
+      
         
         
       

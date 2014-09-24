@@ -1,0 +1,342 @@
+<!DOCTYPE HTML>
+<html>
+<head>
+  <meta charset="utf-8">
+  
+  <title>用Maven创建一个war包 | Lanner Memo</title>
+  <meta name="author" content="Lanner">
+  
+  <meta name="description" content="上回书说到，可以把war包部署到tomcat或jboss的目录中，来搭建一个网站。war包中最主要的文件就是WEB-INF目录下的web.xml文件，它指定了url的处理规则。那现在就可以YY一下，如果从零开始，搭建一个网站的话，都需要哪些步骤？
+
+写java代码，主要包括一些servlet的子类，也可能会写一些filter
+写前段代码，可能是jsp的、可能是velocity的，也可能是单纯的html
+引入必要的静态资源，像js、css或者图片等
+写web.xml，定义url处理规则
+编译java源码
+单元测试
+建立目录结构，把编译好的class文件、web.xml、前端模板、静态资源按照war包的目录结构组织起来
+达成war包并拷贝到tomcat的目录下，重启tomcat
+
+只是YY一下，就需要有8个步骤了，实际操作中可能还会有想不到的意外，像环境问题等。如果工程庞大的话，这八个步骤全部手工操作，难免会有遗漏，这个时候maven就重天而降了。">
+  
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+
+  <meta property="og:title" content="用Maven创建一个war包"/>
+  <meta property="og:site_name" content="Lanner Memo"/>
+
+  
+    <meta property="og:image" content="undefined"/>
+  
+
+  <link href="/favicon.png" rel="icon" type="image/x-ico">
+  <link rel="alternate" href="/atom.xml" title="Lanner Memo" type="application/atom+xml">
+  <link rel="stylesheet" href="/css/style.css" media="screen" type="text/css">
+  <!--[if lt IE 9]><script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script><![endif]-->
+  
+
+</head>
+
+
+<body>
+  <header id="header" class="inner"><div class="alignleft">
+  <h1><a href="/">Lanner Memo</a></h1>
+  <h2><a href="/">Lanner的菜鸟笔记</a></h2>
+</div>
+<nav id="main-nav" class="alignright">
+  <ul>
+    
+      <li><a href="/">Home</a></li>
+    
+      <li><a href="/About">关于Lanner</a></li>
+    
+      <li><a href="/nonsense">碎碎念</a></li>
+    
+      <li><a href="/task">欠的债</a></li>
+    
+  </ul>
+  <div class="clearfix"></div>
+</nav>
+<div class="clearfix"></div></header>
+  <div id="content" class="inner">
+    <div id="main-col" class="alignleft"><div id="wrapper"><article class="post">
+  
+  <div class="post-content">
+    <header>
+      
+        <div class="icon"></div>
+        <time datetime="2014-09-24T11:04:04.000Z"><a href="/2014/09/24/build-a-war-with-maven/">Sep 24 2014</a></time>
+      
+      
+  
+    <h1 class="title">用Maven创建一个war包</h1>
+  
+
+    </header>
+    <div class="entry">
+      
+        <p><a href="2014/09/24/common-java-tools/">上回书</a>说到，可以把war包部署到tomcat或jboss的目录中，来搭建一个网站。war包中最主要的文件就是WEB-INF目录下的web.xml文件，它指定了url的处理规则。那现在就可以YY一下，如果从零开始，搭建一个网站的话，都需要哪些步骤？</p>
+<ol>
+<li>写java代码，主要包括一些servlet的子类，也可能会写一些filter</li>
+<li>写前段代码，可能是jsp的、可能是velocity的，也可能是单纯的html</li>
+<li>引入必要的静态资源，像js、css或者图片等</li>
+<li>写web.xml，定义url处理规则</li>
+<li>编译java源码</li>
+<li>单元测试</li>
+<li>建立目录结构，把编译好的class文件、web.xml、前端模板、静态资源按照war包的目录结构组织起来</li>
+<li>达成war包并拷贝到tomcat的目录下，重启tomcat</li>
+</ol>
+<p>只是YY一下，就需要有8个步骤了，实际操作中可能还会有想不到的意外，像环境问题等。如果工程庞大的话，这八个步骤全部手工操作，难免会有遗漏，这个时候maven就重天而降了。</p>
+<a id="more"></a>
+
+<h1 id="开始使用Maven">开始使用Maven</h1>
+<p>Maven是什么？我就不套用官方解释了，只说说Maven是干什么的。其实在上一段中已经发现了，上述YY的八个步骤，只有需要动手写代码的几步是必须要完成的，对于编译、单元测试、调整目录结构、打包部署等流程，完全可以按照一个规范来做，从而实现自动化。Maven就是做这个的。Maven的安装、配置和Maven的使用细节，在许晓斌的《Maven实战》中有详细的描述，也可以参考Maven官方的文档来具体学习Maven的使用。这里，我这说说如何用Maven来创建一个war包。</p>
+<p>还是以hello为例吧，这里我使用的web容器是tomcat 8.0，并将war包部署在tomcat的webapps目录下，打出的war名字为webtest.war，所以war包部署完毕后，根据tomcat的url规则，在浏览器中访问 <a href="http://localhost:8080/webtest/hello" target="_blank" rel="external">http://localhost:8080/webtest/hello</a> 后，可以看见 <code>Hello</code> 字样。</p>
+<p>为了简单起见，这里使用了eclipse，安装了m2eclipse插件后，eclipse可以新建一个Maven Project。过程中需要选择项目骨架（Archetype），输入groupId、artifactId、Package。我的选择如下：</p>
+<ul>
+<li>Archetype: maven-archetype-webapp </li>
+<li>groupId: me.lanner.test</li>
+<li>artifactiId: webtest</li>
+<li>package: me.lanner.test.webtest</li>
+</ul>
+<p>成功后，在eclipse可以看到项目中包含src/main/resources这样一个文件夹，在Maven的约定中，这个文件夹主要用来存放xml资源文件；java源码文件应该默认存放在src/main/java文件夹中，目前是没有的，需要在工程中新建一个source folder，命名为src/main/java。之后，需要一个servlet来处理url为hello的请求，相应的类为me.lanner.test.webtest.HelloServlet，代码很简单</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div></pre></td><td class="code"><pre><div class="line"><span class="keyword">package</span> me.lanner.test.webtest;</div><div class="line"></div><div class="line"><span class="keyword">import</span> java.io.*;</div><div class="line"><span class="keyword">import</span> javax.servlet.*;</div><div class="line"><span class="keyword">import</span> javax.servlet.http.*;</div><div class="line"></div><div class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">Hello</span> <span class="keyword">extends</span> <span class="title">HttpServlet</span> </span>{</div><div class="line">    <span class="annotation">@Override</span></div><div class="line">    <span class="keyword">protected</span> <span class="keyword">void</span> <span class="title">doGet</span>(HttpServletRequest req, HttpServletResponse resp) <span class="keyword">throws</span> ServletException, IOException {</div><div class="line">        PrintWriter writer = resp.getWriter();</div><div class="line">        writer.println(<span class="string">"Hello"</span>);</div><div class="line">    }</div><div class="line">}</div></pre></td></tr></table></figure>
+
+<p>接下来要修改配置文件webapp/WEB-INF/web.xml，写路由规则，把url为/hello的请求分配给HelloServlet处理，web.xml的源码如下：</p>
+<figure class="highlight xml"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div></pre></td><td class="code"><pre><div class="line"><span class="tag">&lt;<span class="title">web-app</span> <span class="attribute">xmlns</span>=<span class="value">"http://java.sun.com/xml/ns/j2ee"</span></span></div><div class="line">    <span class="attribute">xmlns:xsi</span>=<span class="value">"http://www.w3.org/2001/XMLSchema-instance"</span></div><div class="line">    <span class="attribute">xsi:schemaLocation</span>=<span class="value">"http://java.sun.com/xml/ns/j2ee</span></div><div class="line">    http://java.sun.com/xml/ns/j2ee/web-app_2_4.xsd"</div><div class="line">    <span class="attribute">version</span>=<span class="value">"2.4"</span>&gt;</div><div class="line">    <span class="tag">&lt;<span class="title">servlet</span>&gt;</span></div><div class="line">        <span class="tag">&lt;<span class="title">servlet-name</span>&gt;</span>hello<span class="tag">&lt;/<span class="title">servlet-name</span>&gt;</span></div><div class="line">        <span class="tag">&lt;<span class="title">servlet-class</span>&gt;</span>me.lanner.test.webtest.HelloServlet<span class="tag">&lt;/<span class="title">servlet-class</span>&gt;</span></div><div class="line">    <span class="tag">&lt;/<span class="title">servlet</span>&gt;</span></div><div class="line">    <span class="tag">&lt;<span class="title">servlet-mapping</span>&gt;</span></div><div class="line">        <span class="tag">&lt;<span class="title">servlet-name</span>&gt;</span>hello<span class="tag">&lt;/<span class="title">servlet-name</span>&gt;</span></div><div class="line">        <span class="tag">&lt;<span class="title">url-pattern</span>&gt;</span>/hello<span class="tag">&lt;/<span class="title">url-pattern</span>&gt;</span></div><div class="line">    <span class="tag">&lt;/<span class="title">servlet-mapping</span>&gt;</span></div><div class="line"><span class="tag">&lt;/<span class="title">wep-app</span>&gt;</span></div></pre></td></tr></table></figure>
+
+<p>web.xml定义规则可以分两步：</p>
+<ol>
+<li>根据servlet类创建一个servlet结点，在这里就是使用me.lanner.test.webtest.HelloServlet类创建了一个名为hello的servlet结点</li>
+<li>建立一个映射规则，把url符合条件的请求指向servlet结点，比如把url结尾为/hello的请求指向了<code>1</code>中建立的名字为hello的servlet</li>
+</ol>
+<p>好了，代码编写工作到此已经结束，下面就是编译、测试、打包、发布，这一系列动作都可以交给maven执行。由于这里并没有写测试代码，而且发布的过程也很简单（其实就是把war包拷过去再重启一下tomcat），因此只需要编译打包就ok了。在根目录，即pom.xml所在目录执行</p>
+<figure class="highlight"><table><tr><td class="gutter"><pre><div class="line">1</div></pre></td><td class="code"><pre><div class="line">mvn clean <span class="keyword">package</span></div></pre></td></tr></table></figure>
+
+<p>这里顺便说一句，为了编译通过，要在项目中添加servlet包，方式是在pom文件中添加一个dependency结点，结点中指定依赖包的groupId、artifactId和version等。</p>
+<figure class="highlight xml"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div></pre></td><td class="code"><pre><div class="line"><span class="tag">&lt;<span class="title">dependencies</span>&gt;</span></div><div class="line">    <span class="tag">&lt;<span class="title">dependency</span>&gt;</span></div><div class="line">        <span class="tag">&lt;<span class="title">groupId</span>&gt;</span>javax.servlet<span class="tag">&lt;/<span class="title">groupId</span>&gt;</span></div><div class="line">        <span class="tag">&lt;<span class="title">artifactId</span>&gt;</span>javax.servlet-api<span class="tag">&lt;/<span class="title">artifactId</span>&gt;</span></div><div class="line">        <span class="tag">&lt;<span class="title">version</span>&gt;</span>3.1.0<span class="tag">&lt;/<span class="title">version</span>&gt;</span></div><div class="line">    <span class="tag">&lt;/<span class="title">dependency</span>&gt;</span></div><div class="line"><span class="tag">&lt;/<span class="title">dependencies</span>&gt;</span></div></pre></td></tr></table></figure>
+
+<p>好，上面执行的mvn命令有两条：clean和package，实际上maven做了3件事</p>
+<ol>
+<li>clean：清理项目，把上次构建时产生的类文件、临时文件等统统干掉</li>
+<li>compile：编译，把所有的java文件编译为类文件</li>
+<li>package：打包，把编译好的类文件和其他资源文件如xml等按照war包规则打成war包。</li>
+</ol>
+<p>如果一切顺利的话，在项目根目录的target/目录下，应该会生成一个webtest.war，让我们看看类文件是如何被打包为war包的，把war包解压（随便用一个能解析zip包的软件都可以做到），看看war包的目录结构是不是这个样子</p>
+<figure class="highlight"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div></pre></td><td class="code"><pre><div class="line">./</div><div class="line">├─META-<span class="built_in">INF</span></div><div class="line">└─WEB-<span class="built_in">INF</span></div><div class="line">    ├─ web.xml</div><div class="line">    ├─classes</div><div class="line">    │  └─me</div><div class="line">    │      └─lanner</div><div class="line">    │          └─<span class="keyword">test</span></div><div class="line">    │              └─placeholdertest</div><div class="line">    │                   └─Hello.class</div><div class="line">    └─lib</div><div class="line">         └─javax.servlet-api-<span class="number">3.1</span><span class="string">.0</span>.jar</div></pre></td></tr></table></figure>
+
+<p>发现什么规律来了吗？</p>
+<ol>
+<li>根目录下有两个文件夹：META-INF和WEB-INF，一切的东西都被搞到了WEB-INF目录中</li>
+<li>WEB-INF目录下有3部分<ol>
+<li>web.xml</li>
+<li>classes目录，下面存放了被编译的类文件</li>
+<li>lib目录，存放了第三方依赖库</li>
+</ol>
+</li>
+</ol>
+<p>也就是说原项目目录中src/main/java中的java文件编译成的class文件都会被拷贝到WEB-INF/classes目录下，实际上，<strong>src/main/resources目录中的xml文件也会被直接拷贝到classes目录下</strong>。如果源码中有classpath引用的话，它实际指向的是哪呢？应该是<font color="red"><strong>classes目录和lib目录</strong></font>，这句话要牢记，下文会用到。</p>
+<p>接下来，把webtest.war拷贝到tomcat的webapps中，重启tomcat，浏览器中访问<a href="http://localhost:8080/webtest/hello，看看结果吧。如果失败的话，请移步tomcat的日志文件中差错。" target="_blank" rel="external">http://localhost:8080/webtest/hello，看看结果吧。如果失败的话，请移步tomcat的日志文件中差错。</a></p>
+<h1 id="使用前端模板Velocity">使用前端模板Velocity</h1>
+<p>ok？ok的话开始增加需求，和<a href="2014/09/24/common-java-tools/">上回书</a>的类似，做一个登录后验证，并给出登录成功/失败信息的网页。架构设计与之前保持一致，验证时采用UserBean + LoginValidator的方式。不过Shell类改为LoginServlet类，用来显示登录页面，若验证通过，跳转到hello页面；验证失败，停留在login页面。<strong>login页面的用户名、密码参数采用POST方法传递。</strong></p>
+<p>开始很简单，新建一个类me.lanner.test.webtest.LoginServlet，在doGet中处理get请求，即展示登录页面；在doPost中获取用户名密码，然后生成UserBean并使用LoginValidator验证。成功，则使用HttpServletResponse的sendRedirect方法跳转到hello页面，代码如下：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div><div class="line">16</div><div class="line">17</div><div class="line">18</div><div class="line">19</div><div class="line">20</div><div class="line">21</div><div class="line">22</div><div class="line">23</div><div class="line">24</div><div class="line">25</div><div class="line">26</div><div class="line">27</div><div class="line">28</div></pre></td><td class="code"><pre><div class="line"><span class="keyword">package</span> me.lanner.test.webtest;</div><div class="line"></div><div class="line"><span class="keyword">import</span> ...</div><div class="line"></div><div class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">Login</span> <span class="keyword">extends</span> <span class="title">HttpServlet</span> </span>{</div><div class="line"></div><div class="line">    <span class="annotation">@Override</span></div><div class="line">    <span class="keyword">protected</span> <span class="keyword">void</span> <span class="title">doGet</span>(HttpServletRequest req, HttpServletResponse resp) <span class="keyword">throws</span> ServletException, IOException {</div><div class="line">        PrintWriter writer = resp.getWriter();</div><div class="line">        writer.println(<span class="string">"....."</span>);      <span class="comment">// 额，这个地方是不是得把Login页面的HTML源码写下来啊？</span></div><div class="line">    }</div><div class="line">}</div><div class="line"></div><div class="line">    <span class="annotation">@Override</span></div><div class="line">    <span class="keyword">protected</span> <span class="keyword">void</span> <span class="title">doPost</span>(HttpServletRequest req, HttpServletResponse resp) <span class="keyword">throws</span> ServletException, IOException {</div><div class="line">        String username = request.getParameter(<span class="string">"username"</span>);</div><div class="line">        String password = request.getParameter(<span class="string">"password"</span>);</div><div class="line">        <span class="keyword">if</span> (username != <span class="keyword">null</span> && username.length() &gt; <span class="number">0</span> && password != <span class="keyword">null</span> && password.length() &gt; <span class="number">0</span>) {</div><div class="line">            UserBean ub = <span class="keyword">new</span> UserBean();</div><div class="line">            ub.setUsername(username);</div><div class="line">            ub.setPassword(password);</div><div class="line">            LoginValidator lv = <span class="keyword">new</span> LoginValidator();</div><div class="line">            <span class="keyword">if</span> (!lv.validate(ub)) {</div><div class="line">                resp.sendRedirect(<span class="string">"hello"</span>);    <span class="comment">// 验证成功，则跳转到hello页面</span></div><div class="line">            }</div><div class="line">        }</div><div class="line">    }</div><div class="line">}</div></pre></td></tr></table></figure>
+
+<p>发现了个小问题，在处理get请求时，应该如何把页面给显示出来？之前显示个hello还好，直接用writer写一个hello就好了；但现在我要写个页面啊，难道我要把html的代码用字符串的方式写到java代码里面？不是说好了逻辑和表现分离的吗？是时候引入前端模板了。</p>
+<p>所谓的前端模板，就是用来展现前端页面的一个包，里面可能会有少量的逻辑判断，比如在某个位置是要显示一个成功提示还是要显示一个失败提示；也会有for循环来打印许多的html结点。但它的主要任务还是与servlet一道，把请求的处理逻辑和请求处理结果（网页页面）分离开来。Velocity就是一种常见的前端模板，它有一套自己的语法由Velocity包来解析并生成相应的html页面。</p>
+<p>要是用Velocity，需要如下几个步骤</p>
+<ol>
+<li><p>引入Velocity依赖包，本文pom中的velocity dependency结点定义为</p>
+<pre><code> <span class="tag">&lt;<span class="title">dependency</span>&gt;</span>
+     <span class="tag">&lt;<span class="title">groupId</span>&gt;</span>org.apache.velocity<span class="tag">&lt;/<span class="title">groupId</span>&gt;</span>
+     <span class="tag">&lt;<span class="title">artifactId</span>&gt;</span>velocity<span class="tag">&lt;/<span class="title">artifactId</span>&gt;</span>
+     <span class="tag">&lt;<span class="title">version</span>&gt;</span>1.7<span class="tag">&lt;/<span class="title">version</span>&gt;</span>
+ <span class="tag">&lt;/<span class="title">dependency</span>&gt;</span>
+ <span class="tag">&lt;<span class="title">dependency</span>&gt;</span>
+     <span class="tag">&lt;<span class="title">groupId</span>&gt;</span>org.apache.velocity<span class="tag">&lt;/<span class="title">groupId</span>&gt;</span>
+     <span class="tag">&lt;<span class="title">artifactId</span>&gt;</span>velocity-tools<span class="tag">&lt;/<span class="title">artifactId</span>&gt;</span>
+     <span class="tag">&lt;<span class="title">version</span>&gt;</span>2.0<span class="tag">&lt;/<span class="title">version</span>&gt;</span>
+ <span class="tag">&lt;/<span class="title">dependency</span>&gt;</span>
+</code></pre></li>
+<li><p>在WEB-INF目录下新建文件velocity.properties，文件内容可以参照下面内容</p>
+<pre><code> resource.<span class="variable">loader =</span> webapp
+ webapp.resource.loader.<span class="variable">class =</span> org.apache.velocity.tools.view.servlet.WebappLoader
+ webapp.resource.loader.<span class="variable">path =</span> /WEB-INF/vm/
+ input.<span class="variable">encoding =</span> utf8
+ output.<span class="variable">encoding =</span> utf8
+</code></pre><p> 其中，webapp.resource.loader.path属性很重要，这个属性值的意义是vm模板文件所在目录，该目录是一个在war包中的相对路径。还记得maven达成的war包的目录结构吗？再帮你回忆一下，war包包括两个目录META-INF和WEB-INF，那么项目目录中的/WEB-INF/vm对应到war包中呢？路径不变，依然是WEB-INF/vm。</p>
+</li>
+<li><p>在模板目录WEB-INF/vm中新建模板文件，这里需要新建两个模板文件：hello.vm和login.vm，这两个模板文件的内容很简单：</p>
+<ul>
+<li><p>hello.vm</p>
+<p>  hello</p>
+</li>
+<li><p>login.vm</p>
+<p>  <form method="post"></form></p>
+<pre><code>  <span class="tag">&lt;<span class="title">h2</span>&gt;</span>Please sign in<span class="tag">&lt;/<span class="title">h2</span>&gt;</span>
+  <span class="tag">&lt;<span class="title">input</span> <span class="attribute">type</span>=<span class="value">"text"</span> <span class="attribute">name</span>=<span class="value">"username"</span> <span class="attribute">placeholder</span>=<span class="value">"Email address"</span> <span class="attribute">required</span> <span class="attribute">autofocus</span>&gt;</span>
+  <span class="tag">&lt;<span class="title">small</span>&gt;</span>$usernameError<span class="tag">&lt;/<span class="title">small</span>&gt;</span>    <span class="comment">&lt;!-- $usernameError需要说一说 --&gt;</span>
+  <span class="tag">&lt;<span class="title">input</span> <span class="attribute">type</span>=<span class="value">"password"</span> <span class="attribute">name</span>=<span class="value">"password"</span> <span class="attribute">placeholder</span>=<span class="value">"Password"</span> <span class="attribute">required</span>&gt;</span>
+  <span class="tag">&lt;<span class="title">button</span> <span class="attribute">type</span>=<span class="value">"submit"</span>&gt;</span>Sign in<span class="tag">&lt;/<span class="title">button</span>&gt;</span>
+</code></pre><p>  <br>  在html中有一个奇怪的东西<code>$usernameError</code>，这个东西就是vm里面的一个语法点，它实际上是一个变量，具体内容会根据servlet中放到上下文中的值对应上。这个值怎么设置？请耐心往下看。</p>
+</li>
+</ul>
+</li>
+<li><p>处理请求的servlet要使用Velocity包中的VelocityViewServlet子类，而不是采用HttpServlet，实际上，VelocityViewServlet是HttpServlet的子类。并重写handleRequest方法，这个方法合并了HttpServlet的doGet和doPost，需要返回vm模板类Template。这个Template可以用vm模板文件名生成。java代码如下：</p>
+<pre><code> <span class="keyword">package</span> me.lanner.test.webtest;
+
+ <span class="keyword">import</span> ...;
+
+ <span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">Login</span> <span class="keyword">extends</span> <span class="title">VelocityViewServlet</span> </span>{
+     <span class="annotation">@Override</span>
+     <span class="keyword">protected</span> Template <span class="title">handleRequest</span>(HttpServletRequest request, HttpServletResponse response, Context ctx) {
+         String templateName = <span class="string">"login.vm"</span>;
+         String username = request.getParameter(<span class="string">"username"</span>);
+         String password = request.getParameter(<span class="string">"password"</span>);
+         <span class="keyword">if</span> (username != <span class="keyword">null</span> &amp;&amp; username.length() &gt; <span class="number">0</span> &amp;&amp; password != <span class="keyword">null</span> &amp;&amp; password.length() &gt; <span class="number">0</span>) {    
+             UserBean ub = <span class="keyword">new</span> UserBean();
+             ub.setUsername(username);
+             ub.setPassword(password);
+             LoginValidator lv = <span class="keyword">new</span> LoginValidator();
+             <span class="keyword">if</span> (!lv.validate(ub)) {
+                 ctx.put(<span class="string">"usernameError"</span>, lv.getLastError());    <span class="comment">// 注意：设置usernameError</span>
+             } <span class="keyword">else</span> {
+                 templateName = <span class="string">"Hello.vm"</span>;
+             }
+         }
+         <span class="keyword">return</span> getTemplate(templateName);
+     }
+ }
+</code></pre><p> 找到了吗？usernameError的值，使用ctx.put函数，放到把键值对放到上下文中，这样vm模板就能取到了。</p>
+<p> 打个war包，部署一下再试试，然后访问<a href="http://localhost:8080/webtest/login，应该可以看见登录页面并成功登录了。" target="_blank" rel="external">http://localhost:8080/webtest/login，应该可以看见登录页面并成功登录了。</a></p>
+</li>
+</ol>
+<h1 id="引入Spring">引入Spring</h1>
+<p>下面我们来接着改进注意到Login的第8行代码了吗？需要new一个UserBean才能进行用户名密码的验证，同样的现象也出现在第11行代码，LoginValidator的生命周期是需要我们手动管理的。仔细想一想，这样的代码可以改成这样：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div></pre></td><td class="code"><pre><div class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">Login</span> <span class="keyword">extends</span> <span class="title">VelocityViewServlet</span> </span>{</div><div class="line">    <span class="keyword">private</span> UserBean ub = <span class="keyword">new</span> UserBean();</div><div class="line">    <span class="keyword">private</span> LoginValidator lv = <span class="keyword">new</span> LoginValidator();</div><div class="line">    </div><div class="line">    <span class="annotation">@Override</span></div><div class="line">    <span class="keyword">protected</span> Template <span class="title">handleRequest</span>(HttpServletRequest request, HttpServletResponse response, Context ctx) {</div><div class="line">        ......</div><div class="line">        ......</div><div class="line">        <span class="keyword">this</span>.ub.setUsername(username);</div><div class="line">        <span class="keyword">this</span>.ub.setPassword(password);</div><div class="line">        <span class="keyword">if</span> (<span class="keyword">this</span>.lv.validate(<span class="keyword">this</span>.ub)) {</div><div class="line">            ......</div><div class="line">        }</div><div class="line">    }</div><div class="line">}</div></pre></td></tr></table></figure>
+
+<p>看起来一定程度上精简了代码，也因为省去了每次都初始化的麻烦提高了效率，但是ub和lv的生命周期还是又我们自己管理的。在想想LoginValidator内部的实现，defaultUserBean也是由开发者手动管理的，能不能不用考虑这些java对象的初始化，需要的时候它就在那呢？就好像我们根本不用考虑Login这个Servlet是如何被初始化的，只需要关心它的业务逻辑呢？伟大的Java框架Spring现在就要闪亮登场了！</p>
+<h1 id="求助于Bootstrap">求助于Bootstrap</h1>
+<h1 id="扩展阅读">扩展阅读</h1>
+<ul>
+<li><a href="http://maven.apache.org/articles.html" target="_blank" rel="external">Maven Resources</a></li>
+<li><a href="http://hzbook.group.iteye.com/group/wiki/2872-Maven-in-action/" target="_blank" rel="external">ITEye - 《Maven实战》样章</a></li>
+</ul>
+
+      
+    </div>
+    <footer>
+      
+        
+        
+  
+  <div class="tags">
+    <a href="/tags/Java/">Java</a>, <a href="/tags/maven/">maven</a>, <a href="/tags/war/">war</a>, <a href="/tags/classpath/">classpath</a>, <a href="/tags/Spring/">Spring</a>, <a href="/tags/bootstrap/">bootstrap</a>, <a href="/tags/velocity/">velocity</a>
+  </div>
+
+        
+      
+      <div class="clearfix"></div>
+    </footer>
+  </div>
+</article>
+
+
+  <div class="ds-thread" data-thread-key="2014/09/24/build-a-war-with-maven/"></div>
+
+</div></div>
+    <aside id="sidebar" class="alignright">
+  
+
+  
+<div class="widget tag">
+  <h3 class="title">Tags</h3>
+  <ul class="entry">
+  
+    <li><a href="/tags/Core-Data/">Core Data</a><small>1</small></li>
+  
+    <li><a href="/tags/GoLang/">GoLang</a><small>1</small></li>
+  
+    <li><a href="/tags/Java/">Java</a><small>3</small></li>
+  
+    <li><a href="/tags/Spring/">Spring</a><small>2</small></li>
+  
+    <li><a href="/tags/bootstrap/">bootstrap</a><small>1</small></li>
+  
+    <li><a href="/tags/classpath/">classpath</a><small>1</small></li>
+  
+    <li><a href="/tags/iOS/">iOS</a><small>2</small></li>
+  
+    <li><a href="/tags/maven/">maven</a><small>1</small></li>
+  
+    <li><a href="/tags/velocity/">velocity</a><small>1</small></li>
+  
+    <li><a href="/tags/war/">war</a><small>1</small></li>
+  
+    <li><a href="/tags/算法/">算法</a><small>1</small></li>
+  
+  </ul>
+</div>
+
+
+  
+<div class="widget tag">
+  <h3 class="title">Recent Posts</h3>
+  <ul class="entry">
+    
+      <li>
+        <a href="/2014/09/24/build-a-war-with-maven/">用Maven创建一个war包</a>
+      </li>
+    
+      <li>
+        <a href="/2014/09/24/common-java-tools/">java的几个命令行工具备忘</a>
+      </li>
+    
+      <li>
+        <a href="/2014/09/24/Spring笔记-Bean是如何被加载到内存中的/">Spring笔记--Bean是如何被加载到内存中的</a>
+      </li>
+    
+      <li>
+        <a href="/2014/09/23/一个完整的-Core-Data-应用/">一个完整的 Core Data 应用</a>
+      </li>
+    
+      <li>
+        <a href="/2014/09/23/在iOS下访问通讯录/">在iOS下访问通讯录</a>
+      </li>
+    
+  </ul>
+</div>
+
+
+  <iframe width="100%" height="550" class="share_self"  frameborder="0" scrolling="no" src="http://widget.weibo.com/weiboshow/index.php?language=&width=0&height=550&fansRow=2&ptype=1&speed=0&skin=1&isTitle=1&noborder=1&isWeibo=1&isFans=1&uid=2517375827&verifier=5e91864c&dpc=1"></iframe>
+
+</aside>
+    <div class="clearfix"></div>
+  </div>
+  <footer id="footer" class="inner"><div class="alignleft">
+  
+  &copy; 2014 Lanner
+  
+</div>
+<div class="clearfix"></div></footer>
+  <script src="//ajax.useso.com/ajax/libs/jquery/2.0.3/jquery.min.js"></script>
+<script src="/js/jquery.imagesloaded.min.js"></script>
+<script src="/js/gallery.js"></script>
+
+
+
+
+<script type="text/javascript">
+var duoshuoQuery = {short_name:"lanner"};
+        (function() {
+                var ds = document.createElement('script');
+                ds.type = 'text/javascript';ds.async = true;
+                ds.src = 'http://static.duoshuo.com/embed.js';
+                ds.charset = 'UTF-8';
+                (document.getElementsByTagName('head')[0]
+                || document.getElementsByTagName('body')[0]).appendChild(ds);
+        })();
+</script>
+
+</body>
+</html>

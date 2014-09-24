@@ -726,6 +726,7 @@ figure.highlight pre {
 figure.highlight table {
   margin: 0;
   border-spacing: 0;
+  width: auto;
 }
 figure.highlight table td {
   border-bottom: 0;
