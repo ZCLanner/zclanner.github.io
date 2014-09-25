@@ -657,6 +657,12 @@ table td {
   font: 0.9em/1.6 "Lato", Helvetica Neue, Helvetica, Arial, sans-serif;
   text-shadow: 0 0 1px #fff;
 }
+#top_div {
+  position: fixed;
+  bottom: 80px;
+  right: 0;
+  display: none;
+}
 .entry .gist {
   background: #eee;
   border: 1px solid #ddd;
