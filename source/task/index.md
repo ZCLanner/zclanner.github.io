@@ -3,4 +3,3 @@ date: 2014-09-24 18:54:43
 ---
 
 * 总结XmlBeanFactory是如何加载XML文件中的BeanDefinition的
-* 把之间的总结迁移过来
