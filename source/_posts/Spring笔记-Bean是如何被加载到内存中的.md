@@ -34,11 +34,11 @@ XmlBeanFactory的初始化
 
 下面是XmlBeanFactory在初始化过程中涉及到的类的关系图。图中空心三角加实线代表继承、空心三角加虚线代表实现、实线箭头加虚线代表依赖、实心菱形加实线代表组合。另外由于我用的画图工具没有接口的图例，这里用下划线代表接口，没有下划线的代表类。
 
-![XmlBeanFactory初始化过程中的类图](../images/XmlBeanFactory类图.png)
+![XmlBeanFactory初始化过程中的类图](http://lanner-blog-images.u.qiniudn.com/XmlBeanFactory%E7%B1%BB%E5%9B%BE.png)
 
 有点儿复杂吧，这还是简化之后的东西，各位看起来一定是有点儿晕，麻烦尝试着用点儿时间结合我上文说的大致流程理解一下。利用这段时间，我来画一个面向过程思维的流程图。然后再来说说具体的初始化过程。
 
-![GenericBeanDefinition的诞生](../images/GenericBeanDefinition的诞生.png)
+![GenericBeanDefinition的诞生](http://lanner-blog-images.u.qiniudn.com/GenericBeanDefinition%E7%9A%84%E8%AF%9E%E7%94%9F.png)
 
 上面的流程图不是没有标准化的图例，是Lanner自己胡乱画的一个东西，为了简单直观的梳理一下一个Bean定义是通过几个步骤被从XML文件的结点中解析出来的。一个方框代表内存里的一个数据结构，一个方框带个尾巴代表一个处理过程，箭头代表一种内存数据结构经过了一个处理过程以后变成了另外一种数据结构。现在开始结合这两张图简单说一下`new XmlBeanFactory(resource)`的时候，究竟发生了什么事儿。
 
